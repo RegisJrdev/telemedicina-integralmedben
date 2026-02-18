@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Enums\EnvironmentEnum;
 use Stancl\Tenancy\Database\Models\Domain;
 use Stancl\Tenancy\Database\Models\Tenant;
 
@@ -16,17 +17,12 @@ return [
      *
      * Only relevant if you're using the domain or subdomain identification middleware.
      */
-    'central_domains' => [
-        'telemedicinamedben.com.br',
-        '127.0.0.1',
-        'localhost',
-        'localhost:8000',
-    ],
+   'central_domains' => EnvironmentEnum::currentDomains(),
 
-    /**
-     * The central domain used for subdomain identification.
-     */
-    'central_domain' => 'telemedicinamedben.com.br',
+    // /**
+    //  * The central domain used for subdomain identification.
+    //  */
+    // 'central_domain' => 'telemedicinamedben.com.br',
 
     'routes' => [
         'path' => 'routes/tenant.php', 
