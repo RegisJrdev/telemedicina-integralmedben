@@ -20,7 +20,13 @@ return [
         '127.0.0.1',
         'localhost',
         'localhost:8000',
+        'telemedicinamedben.com.br',
     ],
+
+    /**
+     * The central domain used for subdomain identification.
+     */
+    'central_domain' => 'telemedicinamedben.com.br',
 
     'routes' => [
         'path' => 'routes/tenant.php', 

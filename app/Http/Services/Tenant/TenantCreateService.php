@@ -14,7 +14,7 @@ class TenantCreateService
             throw new \Exception('Já existe uma clínica com este nome.');
         }
 
-        $subdomain = $data['subdomain'] . '.localhost';
+        $subdomain = $data['subdomain'] . '.' . config('tenancy.central_domain');
 
         if (Domain::where('domain', $subdomain)->exists()) {
             throw new \Exception('Subdomínio em uso.');

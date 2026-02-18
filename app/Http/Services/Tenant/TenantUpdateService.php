@@ -40,7 +40,7 @@ class TenantUpdateService
         if (isset($data['subdomain']) && $data['subdomain'] !== '') {
             $domain = $tenant->domain()->first();
             if ($domain) {
-                $newDomain = $data['subdomain'] . '.' . config('app.domain');
+                $newDomain = $data['subdomain'] . '.' . config('tenancy.central_domain');
                 $domain->update(['domain' => $newDomain]);
             }
         }

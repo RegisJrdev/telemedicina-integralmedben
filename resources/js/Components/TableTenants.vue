@@ -46,7 +46,7 @@ const deleteTenant = (tenant) => {
         </TableCell>
         <TableCell class="text-center">
           <a
-            :href="`http://${tenant.tenant_domain}:8000`"
+            :href="`https://${tenant.tenant_domain}`"
             target="_blank"
             class="text-cyan-600 hover:text-cyan-800 hover:underline"
           >
