@@ -2,6 +2,7 @@
 
 namespace App\Http\Services\Tenant;
 
+use App\Enums\EnvironmentEnum;
 use App\Models\Tenant;
 use Illuminate\Support\Facades\Storage;
 
@@ -40,7 +41,7 @@ class TenantUpdateService
         if (isset($data['subdomain']) && $data['subdomain'] !== '') {
             $domain = $tenant->domain()->first();
             if ($domain) {
-                $newDomain = $data['subdomain'] . '.' . config('tenancy.central_domain');
+                $newDomain = $data['subdomain'] . '.' . EnvironmentEnum::currentDomains()[0];
                 $domain->update(['domain' => $newDomain]);
             }
         }

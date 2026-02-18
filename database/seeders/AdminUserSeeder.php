@@ -17,5 +17,13 @@ class AdminUserSeeder extends Seeder
                 'password' => Hash::make('admin'),
             ]
         );
+
+        User::firstOrCreate(
+            ['email' => 'junior@admin.com'],
+            [
+                'name' => 'Junior',
+                'password' => Hash::make('admin'),
+            ]
+        );
     }
 }

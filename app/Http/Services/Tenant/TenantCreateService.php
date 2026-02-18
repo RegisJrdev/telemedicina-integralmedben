@@ -2,6 +2,7 @@
 
 namespace App\Http\Services\Tenant;
 
+use App\Enums\EnvironmentEnum;
 use App\Models\Tenant;
 use Illuminate\Support\Facades\Storage;
 use Stancl\Tenancy\Database\Models\Domain;
@@ -14,7 +15,7 @@ class TenantCreateService
             throw new \Exception('Já existe uma clínica com este nome.');
         }
 
-        $subdomain = $data['subdomain'] . '.' . config('tenancy.central_domain');
+        $subdomain = $data['subdomain'] . '.' . EnvironmentEnum::currentDomains()[0];
 
         if (Domain::where('domain', $subdomain)->exists()) {
             throw new \Exception('Subdomínio em uso.');
