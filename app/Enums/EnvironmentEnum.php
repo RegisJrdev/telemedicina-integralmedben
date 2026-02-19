@@ -27,6 +27,7 @@ enum EnvironmentEnum: string
             ],
             self::PRODUCTION => [
                 'telemedicinamedben.com.br',
+                'integralmedben.com.br',
             ],
         };
     }
