@@ -18,7 +18,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.PORT }}
           script: |
-            cd /var/www/telemedicinamedben/prod/public/public
+            cd /var/www/telemedicinamedben/prod/public
 
             git pull origin main
 
