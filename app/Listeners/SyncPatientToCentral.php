@@ -7,9 +7,7 @@ use App\Models\CentralPatient;
 use App\Models\CentralPatientAnswer;
 use App\Models\Patient;
 use App\Models\Question;
-use Illuminate\Contracts\Queue\ShouldQueue;
-
-class SyncPatientToCentral implements ShouldQueue
+class SyncPatientToCentral
 {
     public function handle(PatientCreated $event): void
     {
@@ -41,8 +39,7 @@ class SyncPatientToCentral implements ShouldQueue
         }
 
         // Atualiza o tenant patient com a referência ao central
-        Patient::on('tenant')
-            ->where('id', $event->tenantPatientId)
+        Patient::where('id', $event->tenantPatientId)
             ->update(['central_patient_id' => $centralPatient->id]);
     }
 }
