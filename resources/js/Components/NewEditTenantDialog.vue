@@ -75,7 +75,6 @@ const fetchAddress = async (cep) => {
       form.estado = data.uf || ''
     }
   } catch {
-    // CEP inválido ou erro de rede
   } finally {
     fetchingCep.value = false
   }
@@ -281,7 +280,6 @@ const submit = () => {
           </div>
         </div>
 
-        <!-- Endereço -->
         <div class="border-t pt-4 mt-2">
           <h3 class="text-sm font-semibold mb-3">Endereço</h3>
 

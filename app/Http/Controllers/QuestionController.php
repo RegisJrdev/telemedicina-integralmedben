@@ -17,7 +17,7 @@ class QuestionController extends Controller
     {
         $questions = $this->questionService->getAllQuestions();
 
-        return Inertia::render('Questions/Index', [
+        return Inertia::render('Registros/Index', [
             'questions' => $questions
         ]);
     }
@@ -32,7 +32,7 @@ class QuestionController extends Controller
         $data = $request->validated();
         $this->questionService->createQuestion($data);
 
-        return redirect()->route('dashboard')
+        return redirect()->route('registros.index')
             ->with('success', 'Pergunta criada com sucesso!');
     }
 
@@ -48,7 +48,7 @@ class QuestionController extends Controller
         $data = $request->validated();
         $this->questionService->updateQuestion($question, $data);
 
-        return redirect()->route('dashboard')
+        return redirect()->route('registros.index')
             ->with('success', 'Pergunta atualizada com sucesso!');
     }
 
@@ -63,7 +63,7 @@ class QuestionController extends Controller
     {
         $this->questionService->deleteQuestion($question);
 
-        return redirect()->route('dashboard')
+        return redirect()->route('registros.index')
             ->with('success', 'Pergunta deletada com sucesso!');
     }
 
@@ -72,7 +72,7 @@ class QuestionController extends Controller
         $data = $request->validated();
         $this->questionService->assignTenantQuestion($data['tenant_id'], $data['questions']);
 
-        return redirect(route('dashboard'))
+        return redirect()->route('credenciados.index')
             ->with('success', 'Perguntas vinculadas com sucesso!');
     }
 }

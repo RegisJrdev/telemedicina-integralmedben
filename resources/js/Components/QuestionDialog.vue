@@ -30,7 +30,6 @@ const form = useForm({
 
 const isOptionType = computed(() => form.type === 'option')
 
-// Atualiza o form quando uma questão for passada para edição
 watch(() => props.question, (newQuestion) => {
   if (newQuestion) {
     form.title = newQuestion.title
@@ -44,7 +43,6 @@ watch(() => props.question, (newQuestion) => {
   }
 }, { immediate: true })
 
-// Adiciona campos de opção vazios quando muda para tipo option
 watch(() => form.type, (newType) => {
   if (newType === 'option' && form.options.length === 0) {
     addOption()
@@ -67,7 +65,6 @@ const submit = () => {
 
   const method = props.question ? 'put' : 'post'
 
-  // Prepara os dados para envio
   const data = {
     title: form.title,
     type: form.type,
@@ -75,7 +72,6 @@ const submit = () => {
     is_unique: form.is_unique,
   }
 
-  // Só inclui options se o tipo for 'option'
   if (form.type === 'option') {
     data.options = form.options
   }
