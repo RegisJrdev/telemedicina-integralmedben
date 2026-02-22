@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PublicFormController;
 use App\Http\Controllers\Tenant\TenantAuthController;
+use App\Http\Controllers\Tenant\UserController;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
@@ -32,6 +33,11 @@ Route::middleware([
 
     Route::middleware('auth')->group(function () {
         Route::post('/admin/logout', [TenantAuthController::class, 'logout'])->name('tenant.logout');
+
+        Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        Route::post('/users', [UserController::class, 'store'])->name('users.store');
+        Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
         Route::get('/patients', [PatientController::class, 'index'])->name('patients.index');
         Route::get('/patients/report', [PatientController::class, 'reportPdf'])->name('patients.report');

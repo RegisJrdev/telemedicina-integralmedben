@@ -21,7 +21,7 @@ class TenantAllService
 
         $questions = Question::where('is_active', true)->get();
 
-        return Inertia::render('Dashboard', [
+        return Inertia::render('Credenciados/Index', [
             'tenants' => $tenants,
             'questions' => $questions
         ]);

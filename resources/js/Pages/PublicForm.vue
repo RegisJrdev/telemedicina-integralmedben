@@ -129,7 +129,6 @@ const submit = () => {
       class="flex flex-col items-center justify-center p-6"
       :style="{ backgroundColor: tenantBgColor || '#06b6d4' }"
     >
-      <!-- Tela de sucesso -->
       <div
         v-if="submitted"
         class="w-full max-w-xl bg-white rounded-2xl border shadow-xl p-10 text-center"
@@ -147,7 +146,6 @@ const submit = () => {
         </button>
       </div>
 
-      <!-- Formulário -->
       <form
         v-else
         @submit.prevent="submit"
@@ -176,7 +174,6 @@ const submit = () => {
                 <span v-if="question.is_required" class="text-red-500">*</span>
               </Label>
 
-              <!-- Select para tipo option -->
               <select
                 v-if="question.type === 'option'"
                 :id="`question-${question.id}`"
@@ -194,7 +191,6 @@ const submit = () => {
                 </option>
               </select>
 
-              <!-- Input com máscara (CPF, Telefone) -->
               <input
                 v-else-if="getMask(question)"
                 v-maska
@@ -206,7 +202,6 @@ const submit = () => {
                 :class="(errors[question.id] || form.errors[`answers.${question.id}`]) ? 'border-red-500' : 'border-input'"
               />
 
-              <!-- Input para outros tipos -->
               <Input
                 v-else
                 :id="`question-${question.id}`"

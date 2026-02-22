@@ -8,6 +8,6 @@ class GetAllQuestionsService
 {
     public function execute()
     {
-        return Question::with('options')->latest()->paginate(15);
+        return Question::latest()->get();
     }
 }
