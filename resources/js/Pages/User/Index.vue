@@ -44,8 +44,8 @@ const deleteUser = (user) => {
   <Head title="Usuários" />
 
   <TenantAdminLayout :tenant-name="tenantName" :tenant-photo="tenantPhoto">
-    <div class="flex items-center justify-between mb-4">
-      <h1 class="text-2xl font-bold">Usuários</h1>
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+      <h1 class="text-xl sm:text-2xl font-bold">Usuários</h1>
       <Button @click="openCreateDialog"> Novo Usuário </Button>
     </div>
 

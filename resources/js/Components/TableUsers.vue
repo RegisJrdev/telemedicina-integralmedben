@@ -1,5 +1,6 @@
 <script setup>
 import { Pencil, Trash2 } from "lucide-vue-next";
+import { Link } from "@inertiajs/vue3";
 import {
   Table,
   TableBody,
@@ -28,7 +29,7 @@ const formatDate = (date) => {
 </script>
 
 <template>
-  <div class="p-6">
+  <div class="p-3 sm:p-6 overflow-x-auto">
     <Table>
       <TableHeader>
         <TableRow>

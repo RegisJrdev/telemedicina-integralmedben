@@ -36,9 +36,9 @@ const getAnswer = (patient, questionId) => {
 </script>
 
 <template>
-  <div class="p-6">
-    <div class="flex items-center justify-between mb-4">
-      <h1 class="text-2xl font-bold">Pacientes Cadastrados</h1>
+  <div class="p-3 sm:p-6 overflow-x-auto">
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+      <h1 class="text-xl sm:text-2xl font-bold">Pacientes Cadastrados</h1>
       <a
         :href="route('patients.report')"
         target="_blank"

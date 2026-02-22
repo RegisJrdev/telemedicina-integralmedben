@@ -34,8 +34,8 @@ const viewQuestion = (question) => {
   <Head title="Registros" />
 
   <CentralAdminLayout>
-    <div class="flex items-center justify-between mb-4">
-      <h1 class="text-2xl font-bold">Registros</h1>
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+      <h1 class="text-xl sm:text-2xl font-bold">Registros</h1>
       <Button variant="primary" @click="openCreateQuestionDialog">
         Nova Pergunta
       </Button>
@@ -47,7 +47,7 @@ const viewQuestion = (question) => {
     />
 
     <div class="bg-white border rounded-xl border-gray-200 shadow-sm overflow-hidden">
-      <div class="max-h-[800px] overflow-auto">
+      <div class="overflow-x-auto">
         <TableQuestions
           @edit-question="openEditQuestionDialog"
           @view-question="viewQuestion"

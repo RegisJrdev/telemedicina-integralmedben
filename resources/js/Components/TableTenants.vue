@@ -1,6 +1,14 @@
 <script setup>
 import { Settings, Pencil, Trash2 } from "lucide-vue-next";
 import { router } from "@inertiajs/vue3";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/Components/ui/table";
 
 const props = defineProps({
   tenants: {
