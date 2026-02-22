@@ -2,6 +2,7 @@
 import CentralAdminLayout from "@/Layouts/CentralAdminLayout.vue";
 import NewEditTenantDialog from "@/Components/NewEditTenantDialog.vue";
 import LinkTenantQuestionsDialog from "@/Components/LinkTenantQuestionsDialog.vue";
+import TableTenants from "@/Components/TableTenants.vue";
 import { Button } from "@/Components/ui/button";
 import { Head } from "@inertiajs/vue3";
 import { ref } from "vue";
@@ -41,8 +42,8 @@ const handleCloseEditModal = () => {
 
   <CentralAdminLayout>
 
-    <div class="flex items-center justify-between mb-4">
-      <h1 class="text-2xl font-bold">Credenciados</h1>
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+      <h1 class="text-xl sm:text-2xl font-bold">Credenciados</h1>
       <Button
         variant="primary"
         @click="() => { editingTenant = null; open = true; }"
@@ -58,7 +59,7 @@ const handleCloseEditModal = () => {
     />
 
     <div class="bg-white border rounded-xl border-gray-200 shadow-sm overflow-hidden">
-      <div class="max-h-[800px] overflow-auto">
+      <div class="overflow-x-auto">
         <TableTenants
           @request-assign-questions="openAssignQuestionsModal"
           @edit-tenant="openEditTenantModal"
