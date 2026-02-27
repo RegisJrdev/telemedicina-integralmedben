@@ -34,6 +34,11 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         return $this->belongsToMany(Question::class, 'tenant_questions');
     }
 
+    public function smsTemplates()
+    {
+        return $this->belongsToMany(SmsTemplate::class, 'tenant_sms_templates');
+    }
+
     public static function generateDatabaseName(string $tenantName): string
     {
         return 'tenant_' . str_replace('-', '_', $tenantName);
