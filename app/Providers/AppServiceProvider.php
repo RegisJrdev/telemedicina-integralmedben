@@ -25,8 +25,5 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Vite::prefetch(concurrency: 3);
-
-        Event::listen(PatientCreated::class, SyncPatientToCentral::class);
-        Event::listen(PatientCreated::class, SendNotificationOnPatientCreated::class);
     }
 }

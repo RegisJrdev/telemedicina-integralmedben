@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class SmsLogs extends Model
 {
+
+    protected $connection = 'mysql';
+
     protected $table = "sms_logs";
 
     protected $fillable = [

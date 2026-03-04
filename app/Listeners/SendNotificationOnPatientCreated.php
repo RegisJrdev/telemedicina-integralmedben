@@ -12,12 +12,16 @@ use App\Models\SmsLogs;
 
 class SendNotificationOnPatientCreated
 {
-    public function __construct(private NotificationDispatcher $dispatcher)
-    {
-    }
+    public function __construct(private NotificationDispatcher $dispatcher) {}
 
     public function handle(PatientCreated $event): void
     {
+         \Log::info('SendNotificationOnPatientCreated fired', [
+        'tenantPatientId' => $event->tenantPatientId,
+        'trace' => collect(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10))
+            ->map(fn($t) => ($t['class'] ?? '') . '::' . ($t['function'] ?? ''))
+            ->implode(' → ')
+    ]);
         // Busca templates ativos para o evento 'patient.created'
         // que estejam vinculados ao tenant via tabela pivot tenant_sms_templates
         $templates = SmsTemplate::where('event', SmsTemplateEventEnum::PatientCreated->value)
@@ -61,21 +65,16 @@ class SendNotificationOnPatientCreated
             $data[$key] = $value;
         }
 
-           foreach ($templates as $template) {
-        $message = $template->resolveMessage($data);
-
-            // dd($message);
-        }
-
         // Dispara a notificação para cada template encontrado.
         // O Dispatcher decide se usa SMS, Email, etc. baseado em $template->channel.
         foreach ($templates as $template) {
             $this->dispatcher->send($template, $data);
 
-            // dd($template->resolveMessage($data));
+            SmsLogs::create([
+                'tenant_id'  => $event->tenantId,
+                'patient_id' => $event->tenantPatientId,
+                'message'    => $template->resolveMessage($data),
+            ]);
         }
-
-        SmsLogs::create();
-
     }
 }
