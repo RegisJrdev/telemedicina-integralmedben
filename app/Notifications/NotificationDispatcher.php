@@ -21,6 +21,8 @@ class NotificationDispatcher
         }
 
         $message = $template->resolveMessage($data);
+
+        dd($message);
         $channel = $this->resolve($template->channel);
         $channel->send($recipient, $message);
     }

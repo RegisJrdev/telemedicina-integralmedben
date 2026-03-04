@@ -43,7 +43,7 @@ const deleteTenant = (tenant) => {
       <TableRow>
         <TableHead class="w-[100px] text-center"> Nome </TableHead>
         <TableHead class="text-center">SubDomínio</TableHead>
-        <TableHead class="text-center"> Teste </TableHead>
+        <TableHead class="text-center">Pacientes</TableHead>
         <TableHead class="text-center"> Ações </TableHead>
       </TableRow>
     </TableHeader>
@@ -61,7 +61,9 @@ const deleteTenant = (tenant) => {
             {{ tenant.tenant_domain }}
           </a>
         </TableCell>
-        <TableCell class="text-center"> teste </TableCell>
+        <TableCell class="text-center">
+          {{ tenant.central_patients_count ?? 0 }}
+        </TableCell>
         <TableCell class="text-center">
           <div class="flex items-center justify-center gap-3">
             <button

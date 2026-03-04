@@ -142,7 +142,7 @@ const submit = () => {
                 class="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-cyan-200 bg-cyan-50 text-cyan-700 text-xs font-mono hover:bg-cyan-100 transition-colors"
                 :title="v.label"
               >
-                &#123;{{ v.key }}&#125;
+                {{ v.label }}
               </button>
             </div>
           </div>

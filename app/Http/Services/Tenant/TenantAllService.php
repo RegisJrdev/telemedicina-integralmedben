@@ -16,6 +16,7 @@ class TenantAllService
                     $query->select('id', 'tenant_id', 'domain'),
                 'questions'
             ])
+            ->withCount('centralPatients')
             ->latest()
             ->paginate();
 

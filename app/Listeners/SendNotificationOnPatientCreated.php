@@ -8,6 +8,7 @@ use App\Models\Question;
 use App\Models\SmsTemplate;
 use App\Notifications\NotificationDispatcher;
 use Illuminate\Support\Str;
+use App\Models\SmsLogs;
 
 class SendNotificationOnPatientCreated
 {
@@ -25,6 +26,7 @@ class SendNotificationOnPatientCreated
                 $query->where('tenants.id', $event->tenantId);
             })
             ->get();
+
 
         if ($templates->isEmpty()) {
             return;
@@ -59,10 +61,21 @@ class SendNotificationOnPatientCreated
             $data[$key] = $value;
         }
 
+           foreach ($templates as $template) {
+        $message = $template->resolveMessage($data);
+
+            // dd($message);
+        }
+
         // Dispara a notificação para cada template encontrado.
         // O Dispatcher decide se usa SMS, Email, etc. baseado em $template->channel.
         foreach ($templates as $template) {
             $this->dispatcher->send($template, $data);
+
+            // dd($template->resolveMessage($data));
         }
+
+        SmsLogs::create();
+
     }
 }

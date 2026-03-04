@@ -20,7 +20,7 @@ class SmsTemplateController extends Controller
     public function index()
     {
         $fixed = collect([
-            ['label' => 'Nome do Tenant', 'key' => 'tenant'],
+            ['label' => 'Nome do Credenciado', 'key' => 'tenant'],
             ['label' => 'Nome Completo',  'key' => 'nome_completo'],
         ]);
 
