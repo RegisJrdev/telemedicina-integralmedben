@@ -12,10 +12,11 @@ import {
 } from "@/Components/ui/dialog";
 
 const props = defineProps({
-  open: { type: Boolean, required: true },
-  template: { type: Object, default: null },
-  events: { type: Array, default: () => [] },
-  variables: { type: Array, default: () => [] },
+  open:        { type: Boolean, required: true },
+  template:    { type: Object,  default: null },
+  events:      { type: Array,   default: () => [] },
+  variables:   { type: Array,   default: () => [] },
+  planOptions: { type: Array,   default: () => [] },
 });
 
 const emit = defineEmits(["update:open"]);
@@ -25,10 +26,11 @@ const messageRef = ref(null);
 const isEditing = computed(() => !!props.template);
 
 const form = useForm({
-  name: "",
-  message: "",
-  channel: "sms",
-  event: "",
+  name:     "",
+  message:  "",
+  channel:  "sms",
+  event:    "",
+  plan_id:  null,
   is_active: true,
 });
 
@@ -36,14 +38,16 @@ watch(
   () => props.template,
   (template) => {
     if (template) {
-      form.name = template.name;
-      form.message = template.message;
-      form.channel = template.channel;
-      form.event = template.event;
+      form.name      = template.name;
+      form.message   = template.message;
+      form.channel   = template.channel;
+      form.event     = template.event;
+      form.plan_id   = template.plan_id ?? null;
       form.is_active = template.is_active;
     } else {
       form.reset();
-      form.channel = "sms";
+      form.channel   = "sms";
+      form.plan_id   = null;
       form.is_active = true;
     }
   },
@@ -52,7 +56,6 @@ watch(
 
 const close = () => emit("update:open", false);
 
-// Insere {key} na posição do cursor no textarea
 const insertVariable = (key) => {
   const textarea = messageRef.value;
   if (!textarea) {
@@ -60,7 +63,7 @@ const insertVariable = (key) => {
     return;
   }
   const start = textarea.selectionStart;
-  const end = textarea.selectionEnd;
+  const end   = textarea.selectionEnd;
   form.message = form.message.slice(0, start) + `{${key}}` + form.message.slice(end);
   nextTick(() => {
     textarea.selectionStart = textarea.selectionEnd = start + key.length + 2;
@@ -118,6 +121,25 @@ const submit = () => {
           <p v-if="form.errors.event" class="text-xs text-red-500">{{ form.errors.event }}</p>
         </div>
 
+        <!-- Plano (só exibe se houver opções de plano configuradas) -->
+        <div v-if="planOptions.length" class="space-y-1">
+          <Label for="plan_id">Plano específico</Label>
+          <select
+            id="plan_id"
+            v-model="form.plan_id"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+          >
+            <option :value="null">Todos os pacientes (sem plano específico)</option>
+            <option v-for="plan in planOptions" :key="plan.value" :value="plan.value">
+              {{ plan.label }}
+            </option>
+          </select>
+          <p class="text-xs text-gray-400">
+            Selecione um plano para enviar este SMS apenas a quem escolher esse plano.
+          </p>
+          <p v-if="form.errors.plan_id" class="text-xs text-red-500">{{ form.errors.plan_id }}</p>
+        </div>
+
         <!-- Mensagem -->
         <div class="space-y-1">
           <Label for="message">Mensagem</Label>
@@ -163,9 +185,7 @@ const submit = () => {
 
         <!-- Botões -->
         <div class="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="outline" @click="close">
-            Cancelar
-          </Button>
+          <Button type="button" variant="outline" @click="close">Cancelar</Button>
           <Button type="submit" :disabled="form.processing">
             {{ isEditing ? "Salvar alterações" : "Criar template" }}
           </Button>
