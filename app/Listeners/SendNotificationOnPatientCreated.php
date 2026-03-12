@@ -2,6 +2,7 @@
 
 namespace App\Listeners;
 
+use App\Enums\QuestionRoleEnum;
 use App\Enums\SmsTemplateEventEnum;
 use App\Events\PatientCreated;
 use App\Models\Question;
@@ -15,30 +16,29 @@ class SendNotificationOnPatientCreated
 
     public function handle(PatientCreated $event): void
     {
-        // Busca templates ativos para o evento 'patient.created'
-        // que estejam vinculados ao tenant via tabela pivot tenant_sms_templates
-        $templates = SmsTemplate::where('event', SmsTemplateEventEnum::PatientCreated->value)
-        ->where('is_active', true)
-        ->whereHas('tenants', function ($query) use ($event) {
-            $query->where('tenants.id', $event->tenantId);
-        })
-        ->get();
-        if ($templates->isEmpty()) {
+        $allTemplates = SmsTemplate::where('event', SmsTemplateEventEnum::PatientCreated->value)
+            ->where('is_active', true)
+            ->whereHas('tenants', function ($query) use ($event) {
+                $query->where('tenants.id', $event->tenantId);
+            })
+            ->get();
+
+        if ($allTemplates->isEmpty()) {
             return;
         }
 
-        // Carrega as perguntas correspondentes às respostas do paciente
+        // Carrega as perguntas e monta o $data de variáveis
         $questions = Question::whereIn('id', array_keys($event->answers))
-        ->get()
-        ->keyBy('id');
+            ->get()
+            ->keyBy('id');
 
-        // Monta o array de variáveis disponíveis para o template.
-        // Ex: ['telefone' => '11999999999', 'cpf' => '12345678900', 'nome_completo' => 'João']
         $data = [
-            'tenant_id' => $event->tenantId,
+            'tenant_id'  => $event->tenantId,
             'patient_id' => $event->tenantPatientId,
-            'tenant' => $event->tenantId, // nome do tenant (ex: "clinicaxyz")
+            'tenant'     => $event->tenantId,
         ];
+
+        $patientPlan = null;
 
         foreach ($event->answers as $questionId => $value) {
             $question = $questions[$questionId] ?? null;
@@ -47,23 +47,28 @@ class SendNotificationOnPatientCreated
                 continue;
             }
 
-            // Perguntas com role especial usam o nome do role como chave.
-            // Ex: pergunta com role='cpf' → $data['cpf'] = '12345678900'
             if ($question->role) {
                 $data[$question->role->value] = $value;
+
+                // Captura o plano selecionado para filtrar templates
+                if ($question->role === QuestionRoleEnum::Plan) {
+                    $patientPlan = $value;
+                }
             }
 
-            // Todas as perguntas também ficam disponíveis pelo título slugificado.
-            // Ex: "Nome Completo" → $data['nome_completo'] = 'João Silva'
             $key = Str::slug($question->title, '_');
             $data[$key] = $value;
         }
 
-        // Dispara a notificação para cada template encontrado.
-        // O Dispatcher decide se usa SMS, Email, etc. baseado em $template->channel.
+        // Filtra templates:
+        // - plan_id null → template geral, sempre enviado
+        // - plan_id X    → só enviado se o paciente selecionou o plano X
+        $templates = $allTemplates->filter(
+            fn ($template) => $template->plan_id === null || $template->plan_id === $patientPlan
+        );
+
         foreach ($templates as $template) {
             $this->dispatcher->send($template, $data);
-
         }
     }
 }

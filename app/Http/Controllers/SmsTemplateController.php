@@ -31,14 +31,19 @@ class SmsTemplateController extends Controller
 
         $variables = $fixed->merge($roleVariables)->values();
 
+        // Opções de plano vindas da pergunta com role=plan
+        $planQuestion = Question::where('role', 'plan')->first();
+        $planOptions  = $planQuestion?->options ?? [];
+
         return Inertia::render('SmsTemplate/Index', [
-            'templates' => $this->service->getAll(),
-            'tenants'   => Tenant::orderBy('id')->get(['id', 'data']),
-            'events'    => collect(SmsTemplateEventEnum::cases())->map(fn($case) => [
+            'templates'   => $this->service->getAll(),
+            'tenants'     => Tenant::orderBy('id')->get(['id', 'data']),
+            'events'      => collect(SmsTemplateEventEnum::cases())->map(fn($case) => [
                 'value' => $case->value,
                 'label' => $case->label(),
             ]),
-            'variables' => $variables,
+            'variables'   => $variables,
+            'planOptions' => $planOptions,
         ]);
     }
 
@@ -49,6 +54,7 @@ class SmsTemplateController extends Controller
             'message'   => 'required|string',
             'channel'   => 'required|in:sms',
             'event'     => 'required|string',
+            'plan_id'   => 'nullable|string',
             'is_active' => 'boolean',
         ]);
 
@@ -64,6 +70,7 @@ class SmsTemplateController extends Controller
             'message'   => 'required|string',
             'channel'   => 'required|in:sms',
             'event'     => 'required|string',
+            'plan_id'   => 'nullable|string',
             'is_active' => 'boolean',
         ]);
 

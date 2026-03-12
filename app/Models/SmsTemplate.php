@@ -17,6 +17,7 @@ class SmsTemplate extends Model
         'message',
         'channel',
         'event',
+        'plan_id',
         'recipient_variable',
         'variables',
         'is_active',

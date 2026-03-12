@@ -7,11 +7,12 @@ import TableSmsTemplates from "@/Components/TableSmsTemplates.vue";
 import SmsTemplateDialog from "@/Components/SmsTemplateDialog.vue";
 import LinkTenantSmsTemplatesDialog from "@/Components/LinkTenantSmsTemplatesDialog.vue";
 
-defineProps({
-  templates: { type: Object, required: true },
-  tenants: { type: Array, required: true },
-  events: { type: Array, required: true },
-  variables: { type: Array, required: true },
+const props = defineProps({
+  templates:   { type: Object, required: true },
+  tenants:     { type: Array,  required: true },
+  events:      { type: Array,  required: true },
+  variables:   { type: Array,  required: true },
+  planOptions: { type: Array,  default: () => [] },
 });
 
 const openDialog = ref(false);
@@ -69,6 +70,7 @@ const deleteTemplate = (template) => {
     :template="selectedTemplate"
     :events="events"
     :variables="variables"
+    :plan-options="props.planOptions"
   />
 
   <LinkTenantSmsTemplatesDialog
