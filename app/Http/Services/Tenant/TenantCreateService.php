@@ -3,9 +3,12 @@
 namespace App\Http\Services\Tenant;
 
 use App\Enums\EnvironmentEnum;
+use App\Models\Question;
 use App\Models\Tenant;
 use Illuminate\Support\Facades\Storage;
 use Stancl\Tenancy\Database\Models\Domain;
+
+use Normalizer;
 
 class TenantCreateService
 {
@@ -21,10 +24,14 @@ class TenantCreateService
             throw new \Exception('Subdomínio em uso.');
         }
 
+        //
+
         $tenantData = [
             'id'        => $data['name'],
             'name'      => $data['name'],
             'subdomain' => $data['subdomain'],
+            ''    => $data[''],
+            'sms_quota' => 50,
         ];
 
         if (isset($data['photo']) && $data['photo']) {
@@ -48,10 +55,18 @@ class TenantCreateService
 
         $tenant = Tenant::create($tenantData);
 
+        $subdomainNormalized = Normalizer::normalize($data['subdomain'], Normalizer::NFD);
+        $subdomainNormalized = preg_replace('/[\x{0300}-\x{036F}]/u', '', $subdomainNormalized);
+
         $tenant->domains()->create([
-            'domain' => $subdomain,
+            'domain' => $subdomainNormalized,
         ]);
+
+        $systemQuestionIds = Question::whereNotNull('role')->pluck('id')->toArray();
+        $tenant->questions()->sync($systemQuestionIds);
 
         return $tenant;
     }
 }
+
+

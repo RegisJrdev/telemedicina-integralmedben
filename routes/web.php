@@ -4,6 +4,7 @@ use App\Http\Controllers\CentralUserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QuestionController;
+use App\Http\Controllers\SmsTemplateController;
 use App\Http\Controllers\TenantController;
 use App\Http\Middleware\PreventAccessFromTenantDomains;
 use Illuminate\Support\Facades\Auth;
@@ -40,6 +41,12 @@ Route::middleware([PreventAccessFromTenantDomains::class])->group(function () {
         Route::post('/central-users', [CentralUserController::class, 'store'])->name('central-users.store');
         Route::put('/central-users/{user}', [CentralUserController::class, 'update'])->name('central-users.update');
         Route::delete('/central-users/{user}', [CentralUserController::class, 'destroy'])->name('central-users.destroy');
+
+        Route::get('/sms-templates', [SmsTemplateController::class, 'index'])->name('sms-templates.index');
+        Route::post('/sms-templates', [SmsTemplateController::class, 'store'])->name('sms-templates.store');
+        Route::put('/sms-templates/{smsTemplate}', [SmsTemplateController::class, 'update'])->name('sms-templates.update');
+        Route::delete('/sms-templates/{smsTemplate}', [SmsTemplateController::class, 'destroy'])->name('sms-templates.destroy');
+        Route::post('/sms-templates/{smsTemplate}/tenants', [SmsTemplateController::class, 'assignTenants'])->name('sms-templates.assign-tenants');
     });
 
     Route::post('/store', [TenantController::class, 'store'])->name('tenants.store');
@@ -48,3 +55,4 @@ Route::middleware([PreventAccessFromTenantDomains::class])->group(function () {
 });
 
 require __DIR__ . '/auth.php';
+require __DIR__ . '/admin.php';

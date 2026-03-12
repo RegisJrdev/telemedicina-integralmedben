@@ -1,6 +1,6 @@
 <script setup>
 import { Link, useForm, usePage } from "@inertiajs/vue3";
-import { LayoutDashboard, Building2, ClipboardList, Users, LogOut, ChevronRight } from "lucide-vue-next";
+import { LayoutDashboard, Building2, ClipboardList, Users, MessageSquare, ScrollText, LogOut, ChevronRight } from "lucide-vue-next";
 import { computed, ref } from "vue";
 
 const page = usePage();
@@ -18,6 +18,8 @@ const navLinks = [
   { label: "Credenciados", routeName: "credenciados.index", icon: Building2 },
   { label: "Registros", routeName: "registros.index", icon: ClipboardList },
   { label: "Usuários", routeName: "central-users.index", icon: Users },
+  { label: "SMS Templates", routeName: "sms-templates.index", icon: MessageSquare },
+  { label: "Logs de SMS",   routeName: "admin.sms-logs.index", icon: ScrollText },
 ];
 </script>
 

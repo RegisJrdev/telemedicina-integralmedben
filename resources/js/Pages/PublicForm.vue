@@ -15,6 +15,8 @@ const getMask = (question) => {
   return undefined;
 };
 
+const isSubmitting = ref(false);
+
 const props = defineProps({
   questions: {
     type: Array,
@@ -96,6 +98,9 @@ const submit = () => {
       form.reset();
       errors.value = {};
       submitted.value = true;
+    },
+    onFinish: () => {
+      isSubmitting.value = false;
     },
   })
 };
@@ -222,7 +227,7 @@ const submit = () => {
 
         <button
           type="submit"
-          :disabled="form.processing"
+          :disabled="form.processing || isSubmitting"
           class="w-full mt-6 rounded-xl text-white py-2.5 font-semibold
                  hover:opacity-90 transition flex items-center justify-center gap-2
                  disabled:opacity-60 disabled:cursor-not-allowed"
