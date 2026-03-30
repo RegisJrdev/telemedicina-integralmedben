@@ -1,5 +1,4 @@
 <?php
-
 namespace Database\Seeders;
 
 use App\Models\User;
@@ -13,7 +12,7 @@ class TenantAdminSeeder extends Seeder
         User::firstOrCreate(
             ['email' => 'admintenant@admin.com'],
             [
-                'name' => 'AdminTenant',
+                'name'     => 'AdminTenant',
                 'password' => Hash::make('admintenant'),
             ]
         );
