@@ -24,7 +24,7 @@ jobs:
             set -e
 
             # Navegar para a raiz do projeto (geralmente um nível acima da public)
-            cd /var/www/telemedicinamedben/prod
+            cd /var/www/telemedicinamedben/prod/public
 
             echo "🚀 Iniciando deploy..."
 
