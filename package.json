@@ -22,6 +22,7 @@
         "vue": "^3.4.0"
     },
     "dependencies": {
+        "@cyhnkckali/vue3-color-picker": "^2.1.7",
         "@headlessui/vue": "^1.7.23",
         "@tiptap/extension-placeholder": "^3.21.0",
         "@tiptap/extension-underline": "^3.21.0",

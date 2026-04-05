@@ -1,5 +1,6 @@
 <script setup>
-import { Head, Link } from "@inertiajs/vue3";
+import { Head, Link, router } from "@inertiajs/vue3";
+
 import { Button } from "@/Components/ui/button";
 import {
     CheckCircle,
@@ -46,7 +47,8 @@ defineProps({
                     </Button>
                 </Link>
 
-                <Button variant="ghost" class="w-full gap-2 text-gray-500" @click="window.location.reload()">
+                <Button variant="ghost" class="w-full gap-2 text-gray-500"
+                    @click="router.visit(route('forms.public.show', form.slug))">
                     <ArrowLeft class="w-4 h-4" />
                     Responder novamente
                 </Button>

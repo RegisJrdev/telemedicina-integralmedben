@@ -6,43 +6,79 @@ import CentralAdminLayout from "@/Layouts/CentralAdminLayout.vue";
 import TableForm from "@/Components/TableForm.vue";
 import QuestionDialog from "@/Components/QuestionDialog.vue";
 import { showToast } from '@/Utils/toast';
+
 const props = defineProps({
-    forms: { type: Object, required: true },
-    filters: { type: Object, default: () => ({ status: '', search: '' }) },
-    statusOptions: { type: Array, default: () => [] },
-    can: { type: Object, default: () => ({ create: false, edit: false, delete: false, manage: false, toggleVisibility: false }) },
+    forms: {
+        type: Object,
+        required: true,
+        default: () => ({ data: [] })
+    },
+    filters: {
+        type: Object,
+        default: () => ({ status: '', search: '' })
+    },
+    statusOptions: {
+        type: Array,
+        default: () => []
+    },
+    can: {
+        type: Object,
+        default: () => ({
+            create: false,
+            edit: false,
+            delete: false,
+            manage: false,
+            toggleVisibility: false
+        })
+    },
 });
+
+// ==========================================
+// ESTADO DOS FILTROS
+// ==========================================
 const search = ref(props.filters.search || '');
 const status = ref(props.filters.status || '');
 let searchTimeout = null;
+
+// ==========================================
+// ESTADO DOS DIALOGS
+// ==========================================
 const openFormDialog = ref(false);
 const selectedForm = ref(null);
-const activatingId = ref(null);
+
+// ==========================================
+// ESTADO DE PROCESSAMENTO (loading states)
+// ==========================================
+const processingStatusId = ref(null);  // ✅ Renomeado de activatingId para semântica
 const deletingId = ref(null);
 const togglingVisibilityId = ref(null);
+
+// ==========================================
+// CONFIGURAÇÃO DE STATUS (reutilizável)
+// ==========================================
 const STATUS_CONFIG = {
-    'ativo': {
+    ativo: {
         label: 'ativo',
         color: 'green',
         bgColor: 'bg-green-100',
         textColor: 'text-green-700',
         canRespond: true
     },
-    'rascunho': {
+    rascunho: {
         label: 'em edição (rascunho)',
         color: 'gray',
         bgColor: 'bg-gray-100',
         textColor: 'text-gray-600',
         canRespond: false
     },
-    'pausado': {
+    pausado: {
         label: 'pausado',
         color: 'yellow',
         bgColor: 'bg-yellow-100',
         textColor: 'text-yellow-600',
         canRespond: false
     },
-    'encerrado': {
+    encerrado: {
         label: 'encerrado',
         color: 'red',
         bgColor: 'bg-red-100',
@@ -50,14 +86,20 @@ const STATUS_CONFIG = {
         canRespond: false
     }
 };
+
 const getStatusConfig = (status) => STATUS_CONFIG[status] || {
     label: status,
     color: 'gray',
     canRespond: false
 };
+
+// ==========================================
+// COMPUTED - Estatísticas
+// ==========================================
 const inactiveCount = computed(() => {
     return props.forms.data?.filter(f => !getStatusConfig(f.status).canRespond).length || 0;
 });
+
 const inactiveByStatus = computed(() => {
     const counts = {};
     props.forms.data?.forEach(f => {
@@ -67,103 +109,121 @@ const inactiveByStatus = computed(() => {
     });
     return counts;
 });
+
+// ==========================================
+// MÉTODOS DE NAVEGAÇÃO
+// ==========================================
+
 const openCreateFormDialog = () => {
-    selectedForm.value = null;
-    openFormDialog.value = true;
+    router.visit(route('forms.create'));
 };
+
 const openEditFormDialog = (form) => {
     router.visit(route("forms.edit", form.id));
 };
+
 const viewForm = (form) => {
     router.visit(route("forms.show", form.id));
 };
+
 const viewFormPublic = (form) => {
+    // Se não estiver ativo, mostra preview interno
+    if (form.status !== 'ativo') {
+        viewForm(form);
+        return;
+    }
     router.visit(route("forms.public.show", form.slug));
 };
-const activateForm = (form) => {
-    activatingId.value = form.id;
+
+// ==========================================
+// MÉTODOS DE AÇÕES
+// ==========================================
+
+/**
+ * ✅ NOVO: Handler unificado para mudança de status
+ * Recebe evento do TableForm
+ */
+const handleStatusChange = ({ form, toStatus, actionLabel }) => {
+    processingStatusId.value = form.id;
+
     router.patch(
         route('forms.update-status', form.id),
-        { status: 'ativo' },
+        { status: toStatus },
         {
             preserveScroll: true,
             onFinish: () => {
-                activatingId.value = null;
+                processingStatusId.value = null;
             },
             onSuccess: () => {
-                showToast('Lei cadastrada com sucesso!', 'success');
-                form.reset();
+                showToast(`Formulário ${actionLabel} com sucesso!`, 'success');
             },
             onError: (errors) => {
-                console.error('Erro ao ativar formulário:', errors);
-                showToast('Erro ao ativar: ' + Object.values(errors).join('\n'), 'error');
+                console.error('Erro ao alterar status:', errors);
+                const errorMsg = Object.values(errors).flat().join('\n');
+                showToast(`Erro ao ${actionLabel}: ${errorMsg}`, 'error');
             }
         }
     );
 };
-const deleteForm = (form) => {
+
+/**
+ * Handler para deletar formulário
+ */
+const handleDelete = (form) => {
     deletingId.value = form.id;
-    router.delete(route('forms.destroy', form.id), {
-        preserveScroll: true,
-        onFinish: () => {
-            deletingId.value = null;
-        },
-        onSuccess: () => {
-            showToast('Formulário excluído com sucesso!', 'success');
-            openFormDialog.value = false;
-            selectedForm.value = null;
-        },
-        onError: () => {
-            showToast('Erro ao excluir formulário.', 'error');
-        }
-    });
+    // O TableForm agora gerencia o modal e a requisição internamente
+    // mas podemos reagir ao evento se necessário
 };
-const toggleVisibility = (form) => {
+
+/**
+ * Handler para toggle de visibilidade
+ */
+const handleToggleVisibility = (form) => {
     togglingVisibilityId.value = form.id;
-    router.patch(
-        route('forms.toggle-visibility', form.id),
-        {},
-        {
-            preserveScroll: true,
-            onFinish: () => {
-                togglingVisibilityId.value = null;
-            },
-            onSuccess: () => {
-                const message = form.is_public
-                    ? 'Formulário agora está privado.'
-                    : 'Formulário agora está público.';
-                showToast(message, 'success');
-            },
-            onError: (errors) => {
-                showToast('Erro ao alterar visibilidade: ' + Object.values(errors).join('\n'), 'error');
-            }
-        }
-    );
+    // O TableForm gerencia internamente via modal
 };
+
+// ==========================================
+// FILTROS
+// ==========================================
+
 const applyFilters = () => {
     router.get(
         route('forms.index'),
-        { search: search.value, status: status.value },
-        { preserveState: true, preserveScroll: true, replace: true }
+        {
+            search: search.value,
+            status: status.value
+        },
+        {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true
+        }
     );
 };
+
 watch([search, status], ([newSearch, newStatus], [oldSearch, oldStatus]) => {
     clearTimeout(searchTimeout);
+
+    // Debounce apenas para busca por texto
     if (newSearch !== oldSearch) {
         searchTimeout = setTimeout(applyFilters, 300);
     } else {
         applyFilters();
     }
 });
+
 const clearFilters = () => {
     search.value = '';
     status.value = '';
     applyFilters();
 };
 </script>
+
 <template>
 
     <Head title="Formulários" />
+
     <CentralAdminLayout>
         <!-- Header -->
         <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
@@ -173,11 +233,12 @@ const clearFilters = () => {
                     Visualizando todos os formulários (Modo Admin)
                 </p>
             </div>
-            <Button v-if="can.create" variant="primary" @click="router.visit(route('forms.create'))">
+            <Button v-if="can.create" variant="primary" @click="openCreateFormDialog">
                 Adicionar
             </Button>
         </div>
-        <!-- ⭐ ALERTA INFORMATIVO: Regras de Status -->
+
+        <!-- Alerta Informativo: Regras de Status -->
         <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4 rounded-r-lg">
             <div class="flex">
                 <div class="flex-shrink-0">
@@ -201,7 +262,8 @@ const clearFilters = () => {
                 </div>
             </div>
         </div>
-        <!-- ⭐ ALERTA DE INATIVOS: Detalhado por Status -->
+
+        <!-- Alerta de Inativos -->
         <div v-if="inactiveCount > 0" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
             <div class="flex items-start gap-3">
                 <svg class="h-6 w-6 text-yellow-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24"
@@ -211,9 +273,10 @@ const clearFilters = () => {
                 </svg>
                 <div class="flex-1">
                     <p class="text-sm font-medium text-yellow-800">
-                        Atenção: {{ inactiveCount }} formulário(s) não {{ inactiveCount === 1 ? 'está' : 'estão' }}
-                        ativo(s)
+                        Atenção: {{ inactiveCount }} formulário{{ inactiveCount === 1 ? '' : 's' }} não {{ inactiveCount
+                            === 1 ? 'está' : 'estão' }} ativo{{ inactiveCount === 1 ? '' : 's' }}
                     </p>
+
                     <!-- Detalhamento por status -->
                     <div class="mt-2 flex flex-wrap gap-2">
                         <span v-for="(count, statusKey) in inactiveByStatus" :key="statusKey"
@@ -222,6 +285,7 @@ const clearFilters = () => {
                             {{ getStatusConfig(statusKey).label }}: {{ count }}
                         </span>
                     </div>
+
                     <p class="text-xs text-yellow-700 mt-2">
                         {{ inactiveCount === 1 ? 'Este formulário não pode' : 'Estes formulários não podem' }}
                         receber respostas. Ative {{ inactiveCount === 1 ? 'o' : 'os' }} formulário{{ inactiveCount === 1
@@ -231,6 +295,7 @@ const clearFilters = () => {
                 </div>
             </div>
         </div>
+
         <!-- Filtros -->
         <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm mb-4">
             <div class="flex flex-wrap gap-3 items-end">
@@ -239,6 +304,7 @@ const clearFilters = () => {
                     <input v-model="search" type="text" placeholder="Buscar por título ou descrição..."
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500" />
                 </div>
+
                 <div class="w-48">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
                     <select v-model="status"
@@ -248,25 +314,30 @@ const clearFilters = () => {
                         </option>
                     </select>
                 </div>
+
                 <Button v-if="search || status" variant="outline" @click="clearFilters" class="h-10">
                     Limpar
                 </Button>
             </div>
         </div>
+
         <!-- Dialogs -->
         <QuestionDialog v-model:open="openFormDialog" :question="selectedForm" />
+
         <!-- Tabela -->
         <div class="bg-white border rounded-xl border-gray-200 shadow-sm overflow-hidden">
-            <TableForm :forms="forms" :can="can" :activating-id="activatingId" :deleting-id="deletingId"
+            <TableForm :forms="forms" :can="can" :activating-id="processingStatusId" :deleting-id="deletingId"
                 :toggling-visibility-id="togglingVisibilityId" @edit-form="openEditFormDialog" @view-form="viewForm"
-                @view-form-public="viewFormPublic" @activate-form="activateForm" @delete-form="deleteForm"
-                @toggle-visibility="toggleVisibility" />
+                @view-form-public="viewFormPublic" @change-status="handleStatusChange"
+                @toggle-visibility="handleToggleVisibility" />
         </div>
+
         <!-- Paginação -->
         <div v-if="forms.links && forms.links.length > 3" class="mt-4 flex items-center justify-between">
             <div class="text-sm text-gray-500">
                 Mostrando {{ forms.from }} a {{ forms.to }} de {{ forms.total }} resultados
             </div>
+
             <div class="flex gap-1">
                 <Button v-for="(link, index) in forms.links" :key="index" :variant="link.active ? 'primary' : 'outline'"
                     :disabled="!link.url"

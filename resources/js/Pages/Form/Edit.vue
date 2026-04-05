@@ -7,18 +7,127 @@ import CentralAdminLayout from "@/Layouts/CentralAdminLayout.vue";
 import { showToast } from '@/Utils/toast';
 import Breadcrumb from "@/Components/Breadcrumb.vue";
 import FormField from "@/Components/FormFields/FormField.vue";
+import ColorPicker from "@/Components/ColorPicker.vue";
+import ImageUpload from '@/Components/ImageUpload.vue';
 
 import {
-    Plus, Trash2, GripVertical, Settings, Eye, Save, Globe, Lock,
-    ChevronDown, Type, List, CheckSquare, Radio, CalendarDays,
-    Mail, Hash, Home, Tag, Scale
+    Plus,
+    Trash2,
+    GripVertical,
+    Settings,
+    Eye,
+    Save,
+    Calendar,
+    Globe,
+    Lock,
+    ChevronDown,
+    Type,
+    List,
+    CheckSquare,
+    Radio,
+    CalendarDays,
+    Mail,
+    Hash,
+    Home,
+    Tag,
+    Scale,
+    Palette,
+    Paintbrush,
+    ArrowLeft
 } from "lucide-vue-next";
 
 // ==========================================
-// CONSTANTS & CONFIG
+// PROPS
 // ==========================================
 
-const FIELD_TYPES = [
+const props = defineProps({
+    form: {
+        type: Object,
+        required: true // ✅ Obrigatório no edit
+    },
+    statusOptions: {
+        type: Array,
+        default: () => []
+    },
+    categorias: {
+        type: Array,
+        default: () => []
+    },
+    leis: {
+        type: Array,
+        default: () => []
+    },
+    can: {
+        type: Object,
+        default: () => ({})
+    }
+});
+
+// ==========================================
+// COMPUTED
+// ==========================================
+
+const breadcrumbs = computed(() => [
+    { label: 'Início', href: route('dashboard'), icon: Home },
+    { label: 'Formulários', href: route('forms.index') },
+    { label: 'Editar', href: null },
+]);
+
+const selectedCategoria = computed(() => {
+    return props.categorias.find(c => c.value === formData.value.categoria_id);
+});
+
+const selectedLei = computed(() => {
+    return props.leis.find(l => l.value === formData.value.lei_id);
+});
+
+// ==========================================
+// STATE - Inicializado com dados do formulário existente
+// ==========================================
+
+const formData = ref({
+    // ✅ Dados básicos do formulário existente
+    title: props.form.title || '',
+    description: props.form.description || '',
+    categoria_id: props.form.categoria_id || null,
+    lei_id: props.form.lei_id || null,
+    status: props.form.status || 'rascunho',
+    is_public: props.form.is_public || false,
+    published_at: props.form.published_at || '',
+    expires_at: props.form.expires_at || '',
+    response_limit: props.form.response_limit || '',
+    primary_color: props.form.primary_color || '#22d3ee',
+    secondary_color: props.form.secondary_color || '#06b6d4',
+
+    // ✅ Logo - arquivo novo (null inicialmente) e URL existente
+    logo: null, // File | null - para upload novo
+    logo_url: props.form.logo_url || null, // URL do logo existente
+    logo_posicao: props.form.logo_posicao || 'centro', // Posição do logo
+
+    // ✅ Settings existentes ou default
+    settings: props.form.settings || {
+        allow_multiple: false,
+        show_progress: true,
+        theme: 'default'
+    },
+
+    // ✅ Campos existentes ou array vazio
+    fields: props.form.fields?.map(f => ({
+        ...f,
+        options: f.options || []
+    })) || []
+});
+
+const saving = ref(false);
+const showPreview = ref(false);
+
+const inputClass = "w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500";
+
+// ==========================================
+// FIELD TYPES
+// ==========================================
+
+const fieldTypes = [
     { value: 'text', label: 'Texto curto', icon: Type },
     { value: 'textarea', label: 'Texto longo', icon: Type },
     { value: 'email', label: 'E-mail', icon: Mail },
@@ -29,119 +138,31 @@ const FIELD_TYPES = [
     { value: 'radio', label: 'Opções (radio)', icon: List },
 ];
 
-const INPUT_CLASS = "w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500";
-
-// ==========================================
-// PROPS & EMITS
-// ==========================================
-
-const props = defineProps({
-    form: { type: Object, default: null },
-    statusOptions: { type: Array, default: () => [] },
-    categorias: { type: Array, default: () => [] },
-    leis: { type: Array, default: () => [] },
-    can: { type: Object, default: () => ({}) }
-});
-
-// ==========================================
-// COMPUTED
-// ==========================================
-
-const isEdit = computed(() => !!props.form);
-
-const breadcrumbs = computed(() => [
-    { label: 'Início', href: route('dashboard'), icon: Home },
-    { label: 'Formulários', href: route('forms.index') },
-    isEdit.value
-        ? { label: 'Editar', href: null }
-        : { label: 'Novo Formulário', href: null },
-]);
-
-const selectedCategoria = computed(() =>
-    props.categorias.find(c => c.value === formData.value.categoria_id)
-);
-
-const selectedLei = computed(() =>
-    props.leis.find(l => l.value === formData.value.lei_id)
-);
-
-const hasFields = computed(() => formData.value.fields.length > 0);
-
-const canPublish = computed(() =>
-    formData.value.title && formData.value.fields.length > 0
-);
-
-// ==========================================
-// STATE
-// ==========================================
-
-const formData = ref({
-    title: props.form?.title || '',
-    description: props.form?.description || '',
-    categoria_id: props.form?.categoria_id || null,
-    lei_id: props.form?.lei_id || null,
-    status: props.form?.status || 'rascunho',
-    is_public: props.form?.is_public || false,
-    published_at: props.form?.published_at || '',
-    expires_at: props.form?.expires_at || '',
-    response_limit: props.form?.response_limit || '',
-    settings: props.form?.settings || {
-        allow_multiple: false,
-        show_progress: true,
-        theme: 'default'
-    },
-    fields: props.form?.fields?.map(f => ({
-        ...f,
-        options: f.options || []
-    })) || []
-});
-
-const saving = ref(false);
-const showPreview = ref(false);
-
 // ==========================================
 // FIELD MANAGEMENT
 // ==========================================
 
-const createField = (type = 'text') => ({
-    id: Date.now(),
-    type,
-    label: '',
-    placeholder: '',
-    required: false,
-    options: ['select', 'checkbox', 'radio'].includes(type) ? ['Opção 1', 'Opção 2'] : [],
-    help_text: '',
-    order: formData.value.fields.length
-});
-
 const addField = (type = 'text') => {
-    formData.value.fields.push(createField(type));
+    const newField = {
+        id: Date.now(),
+        type: type,
+        label: '',
+        placeholder: '',
+        required: false,
+        options: ['select', 'checkbox', 'radio'].includes(type) ? ['Opção 1', 'Opção 2'] : [],
+        help_text: '',
+        order: formData.value.fields.length
+    };
+    formData.value.fields.push(newField);
 };
 
 const removeField = (index) => {
-    if (!confirm('Tem certeza que deseja remover este campo?')) return;
-
-    formData.value.fields.splice(index, 1);
-    reorderFields();
+    if (confirm('Tem certeza que deseja remover este campo?')) {
+        formData.value.fields.splice(index, 1);
+        // Reordenar
+        formData.value.fields.forEach((field, idx) => field.order = idx);
+    }
 };
-
-const reorderFields = () => {
-    formData.value.fields.forEach((field, idx) => field.order = idx);
-};
-
-const moveField = (index, direction) => {
-    const fields = formData.value.fields;
-    const newIndex = direction === 'up' ? index - 1 : index + 1;
-
-    if (newIndex < 0 || newIndex >= fields.length) return;
-
-    [fields[index], fields[newIndex]] = [fields[newIndex], fields[index]];
-    reorderFields();
-};
-
-// ==========================================
-// OPTIONS MANAGEMENT
-// ==========================================
 
 const addOption = (fieldIndex) => {
     const field = formData.value.fields[fieldIndex];
@@ -155,105 +176,145 @@ const removeOption = (fieldIndex, optionIndex) => {
     }
 };
 
+const moveField = (index, direction) => {
+    const fields = formData.value.fields;
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+
+    if (newIndex >= 0 && newIndex < fields.length) {
+        [fields[index], fields[newIndex]] = [fields[newIndex], fields[index]];
+        fields.forEach((field, idx) => field.order = idx);
+    }
+};
+
 // ==========================================
 // FORM SUBMISSION
 // ==========================================
 
-const prepareFormData = (publish = false) => {
-    const data = { ...formData.value };
-
-    if (publish) {
-        data.status = 'ativo';
-        data.published_at = new Date().toISOString();
-    }
-
-    return data;
-};
-
-const getRouteConfig = () => ({
-    name: isEdit.value ? 'forms.update' : 'forms.store',
-    params: isEdit.value ? { form: props.form.id } : {}
-});
-
-const handleSuccess = () => {
-    showToast('Formulário salvo com sucesso!', 'success');
-};
-
-const extractErrorMessage = (errors) => {
-    const priorityFields = ['title', 'status', 'categoria_id', 'lei_id', 'fields'];
-
-    // Verifica campos prioritários primeiro
-    for (const field of priorityFields) {
-        if (errors[field]) return errors[field];
-    }
-
-    // Verifica erros em campos dinâmicos
-    for (const [key, value] of Object.entries(errors)) {
-        if (key.startsWith('fields.')) {
-            return Array.isArray(value) ? value[0] : value;
-        }
-    }
-
-    return 'Erro ao salvar formulário. Verifique os campos.';
-};
-
-const handleError = (errors) => {
-    console.error('Erros de validação:', errors);
-    showToast(extractErrorMessage(errors), 'error');
-};
-
 const saveForm = async (publish = false) => {
-    if (saving.value) return;
-
     saving.value = true;
 
-    try {
-        const data = prepareFormData(publish);
-        const { name, params } = getRouteConfig();
+    if (publish && formData.value.status !== 'ativo') {
+        formData.value.status = 'ativo';
+        formData.value.published_at = new Date().toISOString();
+    }
 
-        await router.post(route(name, params), {
-            _method: isEdit.value ? 'PUT' : 'POST',
-            ...data
-        }, {
+    const routeParams = { form: props.form.id };
+    const payload = new FormData();
+
+    // ✅ CORREÇÃO: Enviar todos os campos corretamente
+    Object.keys(formData.value).forEach(key => {
+        const value = formData.value[key];
+
+        if (key === 'fields') {
+            // ✅ Envia como JSON string
+            payload.append(key, JSON.stringify(value || []));
+
+        } else if (key === 'settings') {
+            // ✅ Envia como JSON string
+            const settingsValue = value && typeof value === 'object' ? value : {};
+            payload.append(key, JSON.stringify(settingsValue));
+
+        } else if (key === 'logo' && value instanceof File) {
+            // ✅ Envia arquivo de logo apenas se for novo
+            payload.append(key, value);
+
+        } else if (key === 'logo_posicao') {
+            // ✅ Sempre envia a posição se tiver logo (novo ou existente)
+            if (formData.value.logo || formData.value.logo_url) {
+                payload.append(key, value || 'centro');
+            }
+
+        } else if (['logo_url'].includes(key)) {
+            // ❌ Não envia logo_url (é apenas para preview)
+            return;
+
+        } else if (value === true || value === false) {
+            // ✅ Converter booleanos para string '1' ou '0'
+            payload.append(key, value ? '1' : '0');
+
+        } else if (value !== null && value !== undefined) {
+            // ✅ Outros valores
+            payload.append(key, value);
+        }
+    });
+
+    // ✅ Método PUT para update
+    payload.append('_method', 'PUT');
+
+    try {
+        await router.post(route('forms.update', routeParams), payload, {
             preserveState: true,
             preserveScroll: true,
-            onSuccess: handleSuccess,
-            onError: handleError,
+            forceFormData: true, // ✅ Garante que envia como multipart/form-data
+
+            onSuccess: () => {
+                showToast('Formulário atualizado com sucesso!', 'success');
+
+                // ✅ Limpar o arquivo após salvar (manter apenas URL)
+                formData.value.logo = null;
+            },
+
+            onError: (errors) => {
+                console.error('Erros de validação:', errors);
+
+                // ✅ Extrair mensagens de erro de forma mais completa
+                let errorMessages = [];
+
+                Object.keys(errors).forEach(key => {
+                    const errorValue = errors[key];
+
+                    if (Array.isArray(errorValue)) {
+                        errorMessages.push(...errorValue);
+                    } else if (typeof errorValue === 'string') {
+                        errorMessages.push(errorValue);
+                    } else {
+                        errorMessages.push(JSON.stringify(errorValue));
+                    }
+                });
+
+                const message = errorMessages.length > 0
+                    ? errorMessages[0]
+                    : 'Erro ao atualizar formulário. Verifique os campos.';
+
+                showToast(message, 'error');
+            },
+
+            onFinish: () => {
+                saving.value = false;
+            }
         });
-    } finally {
+    } catch (error) {
+        console.error('Erro inesperado:', error);
+        showToast('Erro inesperado ao salvar.', 'error');
         saving.value = false;
     }
-};
-
-// ==========================================
-// UTILITY FUNCTIONS
-// ==========================================
-
-const formatDateForInput = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toISOString().slice(0, 16); // formato datetime-local
 };
 </script>
 
 <template>
 
-    <Head :title="isEdit ? 'Editar Formulário' : 'Criar Formulário'" />
+    <Head title="Editar Formulário" />
 
     <CentralAdminLayout>
         <!-- Header -->
-        <header class="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-6">
             <div class="space-y-1">
                 <Breadcrumb :items="breadcrumbs" />
                 <h1 class="text-xl sm:text-2xl font-bold">
-                    {{ isEdit ? 'Editar Formulário' : 'Novo Formulário' }}
+                    Editar Formulário
                 </h1>
                 <p class="text-sm text-gray-500">
-                    Configure as informações e adicione os campos desejados
+                    ID: {{ props.form.id }} | Slug: {{ props.form.slug }}
                 </p>
             </div>
 
-            <div class="flex flex-wrap gap-2">
+            <div class="flex gap-2">
+                <!-- ✅ Botão voltar -->
+                <Button variant="outline" :href="route('forms.index')" class="gap-2">
+                    <ArrowLeft class="w-4 h-4" />
+                    Voltar
+                </Button>
+
                 <Button variant="outline" @click="showPreview = !showPreview" class="gap-2">
                     <Eye class="w-4 h-4" />
                     {{ showPreview ? 'Editar' : 'Preview' }}
@@ -261,23 +322,23 @@ const formatDateForInput = (dateString) => {
 
                 <Button variant="outline" @click="saveForm(false)" :disabled="saving" class="gap-2">
                     <Save class="w-4 h-4" />
-                    Salvar Rascunho
+                    Salvar
                 </Button>
 
-                <Button variant="primary" @click="saveForm(true)" :disabled="saving || !canPublish" class="gap-2"
-                    :title="!canPublish ? 'Adicione um título e pelo menos um campo para publicar' : ''">
+                <Button variant="primary" @click="saveForm(true)"
+                    :disabled="saving || !formData.title || formData.fields.length === 0" class="gap-2">
                     <Globe class="w-4 h-4" />
-                    Publicar
+                    {{ formData.status === 'ativo' ? 'Atualizar Publicação' : 'Publicar' }}
                 </Button>
             </div>
-        </header>
+        </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Editor -->
             <div v-if="!showPreview" class="lg:col-span-2 space-y-6">
 
                 <!-- Informações Básicas -->
-                <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                     <div class="flex items-center gap-2 mb-4 text-gray-900 font-semibold">
                         <Settings class="w-5 h-5" />
                         <h2>Informações do Formulário</h2>
@@ -287,27 +348,37 @@ const formatDateForInput = (dateString) => {
                         <!-- Título -->
                         <div>
                             <Label for="title" class="flex items-center gap-1 text-gray-700 pb-1">
-                                Título <span class="text-red-500">*</span>
+                                Título
+                                <span class="text-red-500">*</span>
                             </Label>
                             <input id="title" v-model="formData.title" placeholder="Ex: Pesquisa de Satisfação"
-                                :class="INPUT_CLASS" required />
+                                :class="inputClass" required />
                         </div>
 
                         <!-- Descrição -->
                         <div>
                             <Label for="description" class="text-gray-700">Descrição</Label>
                             <textarea id="description" v-model="formData.description"
-                                placeholder="Descreva o objetivo deste formulário..." :class="INPUT_CLASS"
+                                placeholder="Descreva o objetivo deste formulário..." :class="inputClass"
                                 rows="3"></textarea>
+                        </div>
+
+                        <!-- ✅ Upload de Logo com posição -->
+                        <div>
+                            <ImageUpload v-model="formData.logo" v-model:posicao="formData.logo_posicao"
+                                label="Logo do Formulário"
+                                description="Arraste uma imagem ou clique para alterar o logo"
+                                :previewUrl="formData.logo_url" @error="(err) => showToast(err, 'error')" />
                         </div>
 
                         <!-- Categoria e Lei -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <Label for="categoria" class="flex items-center gap-2 text-gray-700 pb-1">
-                                    <Tag class="w-4 h-4" /> Categoria
+                                    <Tag class="w-4 h-4" />
+                                    Categoria
                                 </Label>
-                                <select id="categoria" v-model="formData.categoria_id" :class="INPUT_CLASS">
+                                <select id="categoria" v-model="formData.categoria_id" :class="inputClass">
                                     <option :value="null">Selecione uma categoria</option>
                                     <option v-for="categoria in categorias" :key="categoria.value"
                                         :value="categoria.value">
@@ -321,9 +392,10 @@ const formatDateForInput = (dateString) => {
 
                             <div>
                                 <Label for="lei" class="flex items-center gap-2 text-gray-700 pb-1">
-                                    <Scale class="w-4 h-4" /> Base Legal (Lei)
+                                    <Scale class="w-4 h-4" />
+                                    Base Legal (Lei)
                                 </Label>
-                                <select id="lei" v-model="formData.lei_id" :class="INPUT_CLASS">
+                                <select id="lei" v-model="formData.lei_id" :class="inputClass">
                                     <option :value="null">Selecione uma lei</option>
                                     <option v-for="lei in leis" :key="lei.value" :value="lei.value">
                                         {{ lei.label }}
@@ -339,7 +411,7 @@ const formatDateForInput = (dateString) => {
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <Label for="status" class="text-gray-700">Status</Label>
-                                <select id="status" v-model="formData.status" :class="INPUT_CLASS">
+                                <select id="status" v-model="formData.status" :class="inputClass">
                                     <option v-for="option in statusOptions" :key="option.value" :value="option.value">
                                         {{ option.label }}
                                     </option>
@@ -349,7 +421,7 @@ const formatDateForInput = (dateString) => {
                             <div>
                                 <Label for="response_limit" class="text-gray-700">Limite de Respostas</Label>
                                 <input id="response_limit" type="number" v-model="formData.response_limit"
-                                    placeholder="Ilimitado" :class="INPUT_CLASS" min="0" />
+                                    placeholder="Ilimitado" :class="inputClass" />
                             </div>
                         </div>
 
@@ -357,32 +429,56 @@ const formatDateForInput = (dateString) => {
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <Label for="published_at" class="text-gray-700 flex items-center gap-2">
-                                    <CalendarDays class="w-4 h-4" /> Data de Publicação
+                                    <Calendar class="w-4 h-4" />
+                                    Data de Publicação
                                 </Label>
                                 <input id="published_at" type="datetime-local" v-model="formData.published_at"
-                                    :class="INPUT_CLASS" />
+                                    :class="inputClass" />
                             </div>
 
                             <div>
                                 <Label for="expires_at" class="text-gray-700 flex items-center gap-2">
-                                    <CalendarDays class="w-4 h-4" /> Data de Expiração
+                                    <Calendar class="w-4 h-4" />
+                                    Data de Expiração
                                 </Label>
                                 <input id="expires_at" type="datetime-local" v-model="formData.expires_at"
-                                    :class="INPUT_CLASS" />
+                                    :class="inputClass" />
+                            </div>
+                        </div>
+
+                        <!-- Cores -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <Label for="primary_color" class="text-gray-700 flex items-center gap-2">
+                                    <Palette class="w-4 h-4" />
+                                    Cor Primária
+                                </Label>
+                                <ColorPicker id="primary_color" v-model="formData.primary_color"
+                                    description="Cor principal do formulário, usada em botões e destaques" />
+                            </div>
+
+                            <div>
+                                <Label for="secondary_color" class="text-gray-700 flex items-center gap-2">
+                                    <Paintbrush class="w-4 h-4" />
+                                    Cor Secundária
+                                </Label>
+                                <ColorPicker id="secondary_color" v-model="formData.secondary_color"
+                                    description="Cor secundária para detalhes e elementos de fundo" />
                             </div>
                         </div>
 
                         <!-- Visibilidade -->
                         <div class="border-t pt-4 mt-4">
-                            <label class="flex items-start gap-3 cursor-pointer">
-                                <input type="checkbox" v-model="formData.is_public"
-                                    class="w-5 h-5 mt-0.5 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500" />
+                            <div class="flex items-center gap-3">
+                                <input type="checkbox" id="is_public" v-model="formData.is_public"
+                                    class="w-5 h-5 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500 cursor-pointer" />
                                 <div>
-                                    <span class="font-medium text-gray-700 flex items-center gap-2">
+                                    <Label for="is_public"
+                                        class="mb-0 cursor-pointer font-medium text-gray-700 flex items-center gap-2">
                                         <Globe v-if="formData.is_public" class="w-4 h-4 text-green-600" />
                                         <Lock v-else class="w-4 h-4 text-gray-400" />
                                         Formulário Público
-                                    </span>
+                                    </Label>
                                     <p class="text-xs text-gray-500 mt-1">
                                         {{ formData.is_public
                                             ? 'Qualquer pessoa com o link pode responder'
@@ -390,20 +486,22 @@ const formatDateForInput = (dateString) => {
                                         }}
                                     </p>
                                 </div>
-                            </label>
+                            </div>
                         </div>
                     </div>
-                </section>
+                </div>
 
                 <!-- Campos Dinâmicos -->
-                <section class="space-y-4">
+                <div class="space-y-4">
                     <div class="flex items-center justify-between">
                         <h2 class="text-lg font-semibold text-gray-900">Campos do Formulário</h2>
-                        <span class="text-sm text-gray-500">{{ formData.fields.length }} campo(s)</span>
+                        <span class="text-sm text-gray-500">
+                            {{ formData.fields.length }} campo(s)
+                        </span>
                     </div>
 
                     <!-- Estado Vazio -->
-                    <div v-if="!hasFields"
+                    <div v-if="formData.fields.length === 0"
                         class="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
                         <p class="text-gray-500 mb-4">Nenhum campo adicionado ainda</p>
                         <Button variant="outline" @click="addField('text')" class="gap-2">
@@ -415,7 +513,7 @@ const formatDateForInput = (dateString) => {
                     <!-- Lista de Campos -->
                     <div v-for="(field, index) in formData.fields" :key="field.id"
                         class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 relative group">
-                        <!-- Ações do Campo -->
+                        <!-- Ações -->
                         <div
                             class="absolute right-4 top-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button @click="moveField(index, 'up')" :disabled="index === 0"
@@ -439,8 +537,8 @@ const formatDateForInput = (dateString) => {
                             <div class="flex-1 space-y-4">
                                 <!-- Tipo e Obrigatório -->
                                 <div class="flex items-center gap-3">
-                                    <select v-model="field.type" :class="INPUT_CLASS + ' w-auto'">
-                                        <option v-for="type in FIELD_TYPES" :key="type.value" :value="type.value">
+                                    <select v-model="field.type" :class="inputClass + ' w-auto'">
+                                        <option v-for="type in fieldTypes" :key="type.value" :value="type.value">
                                             {{ type.label }}
                                         </option>
                                     </select>
@@ -454,14 +552,14 @@ const formatDateForInput = (dateString) => {
 
                                 <!-- Label -->
                                 <input v-model="field.label" placeholder="Digite a pergunta"
-                                    :class="INPUT_CLASS + ' font-medium text-lg'" />
+                                    :class="inputClass + ' font-medium text-lg'" />
 
                                 <!-- Placeholder e Help -->
                                 <div class="grid grid-cols-2 gap-4">
                                     <input v-model="field.placeholder" placeholder="Texto de ajuda (placeholder)"
-                                        :class="INPUT_CLASS" />
+                                        :class="inputClass" />
                                     <input v-model="field.help_text" placeholder="Descrição adicional"
-                                        :class="INPUT_CLASS" />
+                                        :class="inputClass" />
                                 </div>
 
                                 <!-- Opções -->
@@ -470,7 +568,7 @@ const formatDateForInput = (dateString) => {
                                     <p class="text-sm text-gray-600 font-medium">Opções:</p>
                                     <div v-for="(option, optIndex) in field.options" :key="optIndex"
                                         class="flex items-center gap-2">
-                                        <input v-model="field.options[optIndex]" :class="INPUT_CLASS" />
+                                        <input v-model="field.options[optIndex]" :class="inputClass" />
                                         <button @click="removeOption(index, optIndex)"
                                             class="p-1 text-red-500 hover:bg-red-50 rounded"
                                             :disabled="field.options.length <= 1">
@@ -492,10 +590,10 @@ const formatDateForInput = (dateString) => {
                             </div>
                         </div>
                     </div>
-                </section>
+                </div>
 
                 <!-- Botão Flutuante -->
-                <div v-if="hasFields" class="flex justify-center pt-4">
+                <div v-if="formData.fields.length > 0" class="flex justify-center pt-4">
                     <div class="relative group">
                         <Button variant="primary" size="lg" @click="addField('text')"
                             class="rounded-full shadow-lg gap-2 px-6">
@@ -506,7 +604,7 @@ const formatDateForInput = (dateString) => {
                         <div
                             class="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 min-w-[200px]">
                             <p class="text-xs text-gray-500 px-2 py-1">Tipos de campo:</p>
-                            <button v-for="type in FIELD_TYPES" :key="type.value" @click="addField(type.value)"
+                            <button v-for="type in fieldTypes" :key="type.value" @click="addField(type.value)"
                                 class="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md text-left">
                                 <component :is="type.icon" class="w-4 h-4" />
                                 {{ type.label }}
@@ -519,7 +617,18 @@ const formatDateForInput = (dateString) => {
             <!-- Preview -->
             <div v-else class="lg:col-span-2">
                 <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-8 max-w-2xl mx-auto">
-                    <header class="border-b pb-6 mb-6">
+                    <div class="border-b pb-6 mb-6">
+                        <!-- ✅ Logo no Preview com posição -->
+                        <div v-if="formData.logo_url" class="mb-4" :class="{
+                            'text-left': formData.logo_posicao === 'esquerda',
+                            'text-center': formData.logo_posicao === 'centro',
+                            'text-right': formData.logo_posicao === 'direita'
+                        }">
+                            <img :src="formData.logo" v-if="formData.logo instanceof File"
+                                class="h-16 object-contain inline-block" />
+                            <img :src="formData.logo_url" v-else class="h-16 object-contain inline-block" />
+                        </div>
+
                         <h1 class="text-2xl font-bold text-gray-900 mb-2">
                             {{ formData.title || 'Sem título' }}
                         </h1>
@@ -550,12 +659,12 @@ const formatDateForInput = (dateString) => {
                                 <Lock class="w-4 h-4" /> Privado
                             </span>
                         </div>
-                    </header>
+                    </div>
 
                     <form class="space-y-6" @submit.prevent>
                         <FormField v-for="field in formData.fields" :key="field.id" :field="field" disabled />
 
-                        <div v-if="!hasFields" class="text-center text-gray-500 py-8">
+                        <div v-if="formData.fields.length === 0" class="text-center text-gray-500 py-8">
                             Nenhum campo adicionado
                         </div>
 
@@ -567,7 +676,7 @@ const formatDateForInput = (dateString) => {
             </div>
 
             <!-- Sidebar -->
-            <aside class="hidden lg:block space-y-6">
+            <div class="hidden lg:block space-y-6">
                 <div class="bg-blue-50 rounded-xl border border-blue-200 p-4">
                     <h3 class="font-semibold text-blue-900 mb-2">Dicas</h3>
                     <ul class="text-sm text-blue-800 space-y-2 list-disc list-inside">
@@ -577,7 +686,19 @@ const formatDateForInput = (dateString) => {
                         <li>Defina uma data de expiração se for temporário</li>
                     </ul>
                 </div>
-            </aside>
+
+                <!-- ✅ Info do formulário -->
+                <div class="bg-gray-50 rounded-xl border border-gray-200 p-4">
+                    <h3 class="font-semibold text-gray-900 mb-2">Informações</h3>
+                    <div class="text-sm text-gray-600 space-y-1">
+                        <p><strong>ID:</strong> {{ props.form.id }}</p>
+                        <p><strong>Slug:</strong> {{ props.form.slug }}</p>
+                        <p><strong>Criado em:</strong> {{ new Date(props.form.created_at).toLocaleDateString('pt-BR') }}
+                        </p>
+                        <p><strong>Respostas:</strong> {{ props.form.responses_count || 0 }}</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </CentralAdminLayout>
 </template>

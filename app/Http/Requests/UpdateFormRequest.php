@@ -7,13 +7,20 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 
-class StoreFormRequest extends FormRequest
+class UpdateFormRequest extends FormRequest
 {
+    /**
+     * Determine if the user is authorized to make this request.
+     */
     public function authorize(): bool
     {
-        return $this->user()?->can('forms.create') ?? false;
+        // ✅ Verifica permissão de update no formulário específico
+        return $this->user()?->can('forms.update', $this->form) ?? false;
     }
 
+    /**
+     * Get the validation rules that apply to the request.
+     */
     public function rules(): array
     {
         return [
@@ -43,6 +50,9 @@ class StoreFormRequest extends FormRequest
         ];
     }
 
+    /**
+     * Get custom messages for validator errors.
+     */
     public function messages(): array
     {
         return [
@@ -73,10 +83,13 @@ class StoreFormRequest extends FormRequest
             'logo.max'                  => 'A imagem não pode ter mais de 2MB.',
             'logo_posicao.string'       => 'A posição do logo deve ser um texto.',
             'logo_posicao.in'           => 'A posição do logo deve ser: esquerda, centro ou direita.',
-            'settings.array'            => 'As configurações devem ser enviadas como uma lista.', // ✅ Mensagem específica
+            'settings.array'            => 'As configurações devem ser enviadas como uma lista.',
         ];
     }
 
+    /**
+     * Get custom attributes for validator errors.
+     */
     public function attributes(): array
     {
         $attributes = [
@@ -108,6 +121,9 @@ class StoreFormRequest extends FormRequest
         return $attributes;
     }
 
+    /**
+     * Prepare the data for validation.
+     */
     protected function prepareForValidation(): void
     {
         // Garantir que is_public seja boolean
@@ -130,7 +146,7 @@ class StoreFormRequest extends FormRequest
             ]);
         }
 
-        // ✅ NOVO: Tratar settings (mesma lógica do fields)
+        // Tratar settings (mesma lógica do fields)
         if ($this->has('settings')) {
             $settings = $this->settings;
 
@@ -190,6 +206,9 @@ class StoreFormRequest extends FormRequest
         }
     }
 
+    /**
+     * Clean options array.
+     */
     private function cleanOptions(array $options, string $type): array
     {
         if (! in_array($type, ['select', 'checkbox', 'radio'])) {
@@ -201,6 +220,9 @@ class StoreFormRequest extends FormRequest
         }));
     }
 
+    /**
+     * Format the errors from the given Validator instance.
+     */
     protected function formatErrors(Validator $validator): array
     {
         $errors    = $validator->errors()->messages();
@@ -220,6 +242,9 @@ class StoreFormRequest extends FormRequest
         return $formatted;
     }
 
+    /**
+     * Handle a failed validation attempt.
+     */
     protected function failedValidation(Validator $validator)
     {
         $errors = $this->formatErrors($validator);
@@ -239,11 +264,14 @@ class StoreFormRequest extends FormRequest
         );
     }
 
+    /**
+     * Handle a failed authorization attempt.
+     */
     protected function failedAuthorization()
     {
         throw new HttpResponseException(
             redirect()->back()
-                ->with('error', 'Você não tem permissão para criar formulários.')
+                ->with('error', 'Você não tem permissão para editar este formulário.')
         );
     }
 }

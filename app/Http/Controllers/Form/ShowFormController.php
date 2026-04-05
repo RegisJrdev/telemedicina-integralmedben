@@ -9,6 +9,17 @@ use Inertia\Response;
 
 class ShowFormController extends Controller
 {
+    private function getLogoData(Form $form): ?array
+    {
+        $logoArquivo = $form->arquivos->first();
+        if (! $logoArquivo) {
+            return null;
+        }
+        return [
+            'url'     => $logoArquivo->url,
+            'posicao' => $logoArquivo->pivot->posicao ?? 'centro',
+        ];
+    }
     public function __invoke(Request $request, Form $form): Response
     {
         $user = $request->user();
@@ -35,6 +46,15 @@ class ShowFormController extends Controller
                 'is_public'       => $form->is_public,
                 'responses_count' => $form->responses_count,
                 'created_by'      => $form->user->name,
+                'primary_color'   => $form->primary_color,
+                'secondary_color' => $form->secondary_color,
+                'lei_id'          => $form->lei_id,
+                'categoria_id'    => $form->categoria_id,
+                'settings'        => $form->settings,
+                'lei'             => $form->lei,
+                'responses'       => $form->responses()->count(),
+                'categoria'       => $form->categoria,
+                'logo'            => $this->getLogoData($form),
                 'fields'          => $form->fields->map(fn($f) => [
                     'id'       => $f->id,
                     'type'     => $f->type,

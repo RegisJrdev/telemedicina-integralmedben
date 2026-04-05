@@ -1,4 +1,5 @@
 <?php
+
 use App\Http\Controllers\Form\CreateFormController;
 use App\Http\Controllers\Form\DestroyFormController;
 use App\Http\Controllers\Form\EditFormController;
@@ -17,6 +18,7 @@ Route::post('/f/{slug}', [PublicFormController::class, 'store'])
     ->name('public.store');
 Route::get('/f/{slug}/obrigado', [PublicFormController::class, 'thanks'])
     ->name('public.thanks');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/', IndexFormController::class)
         ->name('index')
@@ -36,12 +38,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/{form}', UpdateFormController::class)
         ->name('update')
         ->middleware('permission:forms.edit');
+
+    // ✅ Aceita POST ou PATCH
+    Route::match(['post', 'patch'], 'visibility', ToggleVisibilityFormController::class)
+        ->name('toggle-visibility')
+        ->middleware('permission:forms.edit');
+
     Route::patch('/{form}/status', UpdateStatusFormController::class)
         ->name('update-status')
         ->middleware('permission:forms.update.status');
-    Route::patch('/{form}/visibility', ToggleVisibilityFormController::class)
-        ->name('toggle-visibility')
-        ->middleware('permission:forms.toggle.visibility');
     Route::delete('/{form}', DestroyFormController::class)
         ->name('destroy')
         ->middleware('permission:forms.delete');
