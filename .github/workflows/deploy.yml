@@ -23,7 +23,6 @@ jobs:
           script: |
             set -e
 
-            # Navegar para a raiz do projeto (geralmente um nível acima da public)
             cd /var/www/telemedicinamedben/prod/public
 
             echo "🚀 Iniciando deploy..."
@@ -35,28 +34,19 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
 
-            # Ajuste de permissões rápido se necessário
-            # chown -R www-data:www-data .
-
             echo "📦 Instalando dependências PHP..."
-            # Adicionado --no-interaction e --prefer-dist para maior velocidade
             composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
             echo "📦 Instalando dependências JS..."
-            # npm ci é excelente para produção pois respeita o package-lock.json
-            npm ci
+            npm install  # <-- Aqui está o npm i
 
             echo "🏗️ Buildando assets..."
             npm run build
 
             echo "⚙️ Rodando migrations..."
-            # Rodar antes do cache para garantir que as tabelas existam
             php artisan migrate --force
 
-            # CUIDADO: Rodar seed em produção pode duplicar dados.
-            # Use apenas se os seeds tiverem lógica de "updateOrCreate"
             echo "⚙️ Rodando seeds..."
-            # Rodar antes do cache para garantir que as tabelas existam
             php artisan db:seed --force
 
             echo "⚡ Otimizando aplicação..."
