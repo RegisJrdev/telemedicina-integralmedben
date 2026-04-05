@@ -15,20 +15,16 @@ class EditFormController extends Controller
     public function __invoke(Request $request, Form $form): Response
     {
         $user = $request->user();
-
-        // Autorização
         if (! $this->canView($user, $form)) {
             abort(403, 'Você não tem permissão para visualizar este formulário.');
         }
-
-        // Carrega relações necessárias
         $form->load([
             'user:id,name',
-            'fields' => fn($q) => $q->orderBy('order'),
+            'fields'   => fn($q)   => $q->orderBy('order'),
             'categoria:id,name,description',
             'lei:id,title,type',
+            'arquivos' => fn($q) => $q->wherePivot('tipo', 'logo'),
         ]);
-
         return Inertia::render('Form/Edit', [
             'form'          => $this->formatFormData($form),
             'stats'         => $this->getStats($form),
@@ -39,22 +35,26 @@ class EditFormController extends Controller
             'can'           => $this->getPermissions($user, $form),
         ]);
     }
-
-    /**
-     * Verifica se o usuário pode visualizar o formulário
-     */
     private function canView($user, Form $form): bool
     {
         return $user->can('forms.view')
         || $form->user_id === $user->id
         || $form->is_public;
     }
-
-    /**
-     * Formata os dados do formulário
-     */
+    private function getLogoData(Form $form): ?array
+    {
+        $logoArquivo = $form->arquivos->first();
+        if (! $logoArquivo) {
+            return null;
+        }
+        return [
+            'url'     => $logoArquivo->url,
+            'posicao' => $logoArquivo->pivot->posicao ?? 'centro',
+        ];
+    }
     private function formatFormData(Form $form): array
     {
+        $logoData = $this->getLogoData($form);
         return [
             'id'              => $form->id,
             'code'            => $form->code,
@@ -70,6 +70,12 @@ class EditFormController extends Controller
             'response_limit'  => $form->response_limit,
             'responses_count' => $form->responses_count,
             'created_by'      => $form->user->name,
+            'created_at'      => $form->created_at->format('d/m/Y H:i'),
+            'updated_at'      => $form->updated_at->format('d/m/Y H:i'),
+            'primary_color'   => $form->primary_color,
+            'secondary_color' => $form->secondary_color,
+            'logo_url'        => $logoData['url'] ?? null,
+            'logo_posicao'    => $logoData['posicao'] ?? 'centro',
             'fields'          => $form->fields->map(fn($field) => [
                 'id'          => $field->id,
                 'type'        => $field->type,
@@ -87,14 +93,9 @@ class EditFormController extends Controller
             ],
         ];
     }
-
-    /**
-     * Retorna estatísticas do formulário
-     */
     private function getStats(Form $form): array
     {
         $lastResponse = $form->responses()->latest()->first();
-
         return [
             'total_responses'  => $form->responses_count ?? 0,
             'last_response_at' => $lastResponse?->created_at?->format('d/m/Y H:i'),
@@ -102,22 +103,13 @@ class EditFormController extends Controller
             'completion_rate'  => $this->calculateCompletionRate($form),
         ];
     }
-
-    /**
-     * Calcula taxa de preenchimento (exemplo de métrica extra)
-     */
     private function calculateCompletionRate(Form $form): ?float
     {
         if ($form->response_limit === null || $form->response_limit === 0) {
             return null;
         }
-
         return round(($form->responses_count / $form->response_limit) * 100, 1);
     }
-
-    /**
-     * Retorna respostas paginadas
-     */
     private function getResponses(Form $form)
     {
         return $form->responses()
@@ -133,10 +125,6 @@ class EditFormController extends Controller
                 'created_at' => $response->created_at->format('d/m/Y H:i'),
             ]);
     }
-
-    /**
-     * Opções de status
-     */
     private function getStatusOptions(): array
     {
         return [
@@ -146,14 +134,9 @@ class EditFormController extends Controller
             ['value' => 'encerrado', 'label' => 'Encerrado'],
         ];
     }
-
-    /**
-     * Categorias disponíveis
-     */
     private function getCategorias(Request $request): array
     {
         $search = $request->input('categoria_search');
-
         return FormCategory::query()
             ->when($search, fn($q) => $q->where('name', 'like', "%{$search}%"))
             ->orderBy('name')
@@ -166,14 +149,9 @@ class EditFormController extends Controller
             ])
             ->toArray();
     }
-
-    /**
-     * Leis disponíveis
-     */
     private function getLeis(Request $request): array
     {
         $search = $request->input('lei_search');
-
         return Lei::query()
             ->when($search, function ($q) use ($search): void {
                 $q->where('title', 'like', "%{$search}%")
@@ -190,14 +168,9 @@ class EditFormController extends Controller
             ])
             ->toArray();
     }
-
-    /**
-     * Permissões do usuário
-     */
     private function getPermissions($user, Form $form): array
     {
         $isOwner = $form->user_id === $user->id;
-
         return [
             'view'   => true,
             'edit'   => $user->can('forms.edit') || $isOwner,

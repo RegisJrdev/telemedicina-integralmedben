@@ -3,6 +3,7 @@ namespace App\Http\Controllers\Form;
 
 use App\Http\Controllers\Controller;
 use App\Models\Form;
+use App\Models\FormArquivo;
 use App\Models\FormResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,12 +21,27 @@ class PublicFormController extends Controller
     {
         return $form->status === 'ativo';
     }
+    private function getLogoData(Form $form): ?array
+    {
+        $logoArquivo = $form->arquivos->first();
+        if (! $logoArquivo) {
+            return null;
+        }
+        return [
+            'url'     => $logoArquivo->url,
+            'posicao' => $logoArquivo->pivot->posicao ?? 'centro',
+        ];
+    }
     public function show(string $slug): Response
     {
         try {
             $form = Form::where('slug', $slug)
                 ->where('is_public', true)
                 ->with(['fields' => fn($q) => $q->orderBy('order')])
+                ->with(['arquivos' => fn($q) => $q
+                        ->wherePivot('tipo', FormArquivo::TIPO_LOGO)
+                        ->withPivot('posicao', 'tipo'),
+                ])
                 ->first();
             if (! $form) {
                 Log::warning('Formulário não encontrado', [
@@ -34,6 +50,7 @@ class PublicFormController extends Controller
                 ]);
                 abort(404, 'Formulário não encontrado.');
             }
+            $logoData = $this->getLogoData($form);
             if (! $this->canAcceptResponses($form)) {
                 $statusLabels = [
                     'rascunho'  => 'em edição (rascunho)',
@@ -49,10 +66,14 @@ class PublicFormController extends Controller
                 ]);
                 return Inertia::render('Form/Public/Show', [
                     'form'        => [
-                        'title'       => $form->title,
-                        'status'      => $form->status,
-                        'statusLabel' => $label,
-                        'message'     => "Este formulário está {$label} e não pode receber respostas no momento.",
+                        'title'           => $form->title,
+                        'status'          => $form->status,
+                        'statusLabel'     => $label,
+                        'primary_color'   => $form->primary_color,
+                        'secondary_color' => $form->secondary_color,
+                        'lei'             => $form->lei,
+                        'logo'            => $logoData,
+                        'message'         => "Este formulário está {$label} e não pode receber respostas no momento.",
                         'instruction' => 'Para permitir o preenchimento, altere o status para "Ativo" nas configurações.',
                         'canActivate' => true,
                     ],
@@ -66,13 +87,17 @@ class PublicFormController extends Controller
                 ]);
                 return Inertia::render('Form/Public/Show', [
                     'form' => [
-                        'title'       => $form->title,
-                        'slug'        => $slug,
-                        'status'      => 'expirado',
-                        'statusLabel' => 'expirado',
-                        'message'     => 'Este formulário expirou e não está mais disponível para respostas.',
-                        'instruction' => 'Renove a data de expiração nas configurações para reativá-lo.',
-                        'canActivate' => false,
+                        'title'           => $form->title,
+                        'slug'            => $slug,
+                        'status'          => 'expirado',
+                        'statusLabel'     => 'expirado',
+                        'primary_color'   => $form->primary_color,
+                        'secondary_color' => $form->secondary_color,
+                        'lei'             => $form->lei,
+                        'logo'            => $logoData,
+                        'message'         => 'Este formulário expirou e não está mais disponível para respostas.',
+                        'instruction'     => 'Renove a data de expiração nas configurações para reativá-lo.',
+                        'canActivate'     => false,
                     ],
                 ]);
             }
@@ -85,23 +110,35 @@ class PublicFormController extends Controller
                 ]);
                 return Inertia::render('Form/Public/Show', [
                     'form' => [
-                        'title'       => $form->title,
-                        'status'      => 'limite_atingido',
-                        'statusLabel' => 'com limite atingido',
-                        'message'     => 'Este formulário atingiu o limite máximo de respostas.',
-                        'instruction' => 'Aumente o limite de respostas nas configurações ou crie um novo formulário.',
-                        'canActivate' => false,
+                        'title'           => $form->title,
+                        'primary_color'   => $form->primary_color,
+                        'secondary_color' => $form->secondary_color,
+                        'lei'             => $form->lei,
+                        'status'          => 'limite_atingido',
+                        'statusLabel'     => 'com limite atingido',
+                        'message'         => 'Este formulário atingiu o limite máximo de respostas.',
+                        'instruction'     => 'Aumente o limite de respostas nas configurações ou crie um novo formulário.',
+                        'canActivate'     => false,
+                        'logo'            => $logoData,
                     ],
                 ]);
             }
             return Inertia::render('Form/Public/Show', [
                 'form' => [
-                    'id'          => $form->id,
-                    'title'       => $form->title,
-                    'slug'        => $slug,
-                    'description' => $form->description,
-                    'status'      => $form->status,
-                    'fields'      => $form->fields->map(fn($f) => [
+                    'id'              => $form->id,
+                    'title'           => $form->title,
+                    'slug'            => $slug,
+                    'description'     => $form->description,
+                    'expires_at'      => $form->expires_at,
+                    'response_limit'  => $form->response_limit,
+                    'responses_count' => $form->responses_count,
+                    'is_public'       => $form->is_public,
+                    'primary_color'   => $form->primary_color,
+                    'secondary_color' => $form->secondary_color,
+                    'lei'             => $form->lei,
+                    'status'          => $form->status,
+                    'logo'            => $logoData,
+                    'fields'          => $form->fields->map(fn($f) => [
                         'id'          => $f->id,
                         'type'        => $f->type,
                         'label'       => $f->label,
@@ -212,8 +249,12 @@ class PublicFormController extends Controller
             ->firstOrFail();
         return Inertia::render('Form/Public/Thanks', [
             'form' => [
-                'title'       => $form->title,
-                'description' => $form->description,
+                'title'           => $form->title,
+                'description'     => $form->description,
+                'slug'            => $form->slug,
+                'primary_color'   => $form->primary_color,
+                'secondary_color' => $form->secondary_color,
+                'lei'             => $form->lei,
             ],
         ]);
     }

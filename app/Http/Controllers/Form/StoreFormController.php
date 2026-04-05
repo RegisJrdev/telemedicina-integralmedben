@@ -3,8 +3,11 @@ namespace App\Http\Controllers\Form;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Form\StoreFormRequest;
+use App\Models\Arquivo;
 use App\Models\Form;
+use App\Models\FormArquivo;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class StoreFormController extends Controller
@@ -26,9 +29,15 @@ class StoreFormController extends Controller
                 'published_at'    => $validated['published_at'] ?? null,
                 'expires_at'      => $validated['expires_at'] ?? null,
                 'response_limit'  => $validated['response_limit'] ?? null,
+                'primary_color'   => $validated['primary_color'] ?? '#22d3ee',
+                'secondary_color' => $validated['secondary_color'] ?? '#e0f2fe',
                 'settings'        => $validated['settings'] ?? [],
                 'responses_count' => 0,
             ]);
+            if ($request->hasFile('logo') && $request->file('logo')->isValid()) {
+                $posicao = $validated['logo_posicao'] ?? 'centro';
+                $this->processarLogo($form, $request->file('logo'), $posicao);
+            }
             foreach ($validated['fields'] as $index => $fieldData) {
                 $form->fields()->create([
                     'type'        => $fieldData['type'],
@@ -55,6 +64,53 @@ class StoreFormController extends Controller
                 ->back()
                 ->withInput()
                 ->with('error', 'Erro ao criar formulário. Tente novamente.');
+        }
+    }
+    private function processarLogo(Form $form, $file, string $posicao = 'centro'): void
+    {
+        $nomeOriginal     = $file->getClientOriginalName();
+        $extensao         = $file->getClientOriginalExtension();
+        $mimeType         = $file->getMimeType();
+        $tamanho          = $file->getSize();
+        $nomeArmazenado   = Str::uuid() . '.' . $extensao;
+        $caminhoDiretorio = 'forms/logos/' . $form->id;
+        $caminhoCompleto  = $caminhoDiretorio . '/' . $nomeArmazenado;
+
+        // ⭐ MUDANÇA AQUI: Força disco 'public' em vez do default
+        $disk = 'public';
+
+        $this->criarDiretorioSeNaoExistir($caminhoDiretorio, $disk);
+
+        $file->storeAs($caminhoDiretorio, $nomeArmazenado, $disk);
+
+        $arquivo = Arquivo::create([
+            'nome_original'   => $nomeOriginal,
+            'nome_armazenado' => $nomeArmazenado,
+            'caminho'         => $caminhoCompleto,
+            'extensao'        => $extensao,
+            'mime_type'       => $mimeType,
+            'tamanho'         => $tamanho,
+            'disk'            => $disk,
+            'user_id'         => auth()->id(),
+        ]);
+
+        FormArquivo::create([
+            'arquivo_id' => $arquivo->id,
+            'form_id'    => $form->id,
+            'tipo'       => FormArquivo::TIPO_LOGO,
+            'posicao'    => $posicao,
+        ]);
+    }
+    private function criarDiretorioSeNaoExistir(string $caminho, string $disk): void
+    {
+        $storage = Storage::disk($disk);
+        if (! $storage->exists($caminho)) {
+            $storage->makeDirectory($caminho);
+            $caminhoCompleto = $storage->path($caminho);
+            if (is_dir($caminhoCompleto)) {
+                chmod($caminhoCompleto, 0755);
+            }
+            \Log::info("Diretório criado: {$caminho} no disco {$disk}");
         }
     }
     private function generateUniqueSlug(string $title): string

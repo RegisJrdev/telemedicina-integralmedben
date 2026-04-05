@@ -7,6 +7,8 @@ import CentralAdminLayout from "@/Layouts/CentralAdminLayout.vue";
 import { showToast } from '@/Utils/toast';
 import Breadcrumb from "@/Components/Breadcrumb.vue";
 import FormField from "@/Components/FormFields/FormField.vue";
+import ColorPicker from "@/Components/ColorPicker.vue";
+import ImageUpload from '@/Components/ImageUpload.vue';
 
 import {
     Plus,
@@ -28,7 +30,8 @@ import {
     Hash,
     Home,
     Tag,
-    Scale
+    Scale,
+    Palette, Paintbrush
 } from "lucide-vue-next";
 
 const breadcrumbs = computed(() => [
@@ -76,6 +79,12 @@ const formData = ref({
     published_at: props.form?.published_at || '',
     expires_at: props.form?.expires_at || '',
     response_limit: props.form?.response_limit || '',
+    primary_color: props.form?.primary_color || '#22d3ee',
+    secondary_color: props.form?.secondary_color || '#06b6d4',
+    logo: null,
+    logo_url: props.form?.logo_url || null,
+    logo_posicao: props.form?.logo_posicao || 'centro',
+    // ✅ Garante que settings sempre seja um objeto válido
     settings: props.form?.settings || {
         allow_multiple: false,
         show_progress: true,
@@ -156,10 +165,36 @@ const saveForm = (publish = false) => {
     const routeName = isEdit.value ? 'forms.update' : 'forms.store';
     const routeParams = isEdit.value ? { form: props.form.id } : {};
 
-    router.post(route(routeName, routeParams), {
-        _method: isEdit.value ? 'PUT' : 'POST',
-        ...formData.value
-    }, {
+    const payload = new FormData();
+
+    Object.keys(formData.value).forEach(key => {
+        const value = formData.value[key];
+
+        if (key === 'fields') {
+            // ✅ Sempre envia como JSON string válida
+            payload.append(key, JSON.stringify(value || []));
+        } else if (key === 'settings') {
+            // ✅ Sempre envia como JSON string válida (nunca vazio ou null)
+            const settingsValue = value && typeof value === 'object' ? value : {};
+            payload.append(key, JSON.stringify(settingsValue));
+        } else if (key === 'logo' && value instanceof File) {
+            payload.append(key, value);
+        } else if (key === 'logo_posicao') {
+            // ✅ Só envia se tiver logo (novo ou existente)
+            if (formData.value.logo || formData.value.logo_url) {
+                payload.append(key, value || 'centro');
+            }
+        } else if (!['logo_url'].includes(key)) {
+            // ✅ Converte null/undefined para string vazia para evitar erros
+            payload.append(key, value !== null && value !== undefined ? value : '');
+        }
+    });
+
+    if (isEdit.value) {
+        payload.append('_method', 'PUT');
+    }
+
+    router.post(route(routeName, routeParams), payload, {
         preserveState: true,
         preserveScroll: true,
         onSuccess: () => {
@@ -167,13 +202,13 @@ const saveForm = (publish = false) => {
         },
         onError: (errors) => {
             console.error('Erros de validação:', errors);
-
             let errorMessages = [];
             if (errors.title) errorMessages.push(errors.title);
             if (errors.status) errorMessages.push(errors.status);
             if (errors.categoria_id) errorMessages.push(errors.categoria_id);
             if (errors.lei_id) errorMessages.push(errors.lei_id);
             if (errors.fields) errorMessages.push(errors.fields);
+            if (errors.settings) errorMessages.push(errors.settings); // ✅ Adicionado
 
             Object.keys(errors).forEach(key => {
                 if (key.startsWith('fields.')) {
@@ -235,7 +270,6 @@ const showPreview = ref(false);
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Editor -->
             <div v-if="!showPreview" class="lg:col-span-2 space-y-6">
-
                 <!-- Informações Básicas -->
                 <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                     <div class="flex items-center gap-2 mb-4 text-gray-900 font-semibold">
@@ -260,6 +294,14 @@ const showPreview = ref(false);
                             <textarea id="description" v-model="formData.description"
                                 placeholder="Descreva o objetivo deste formulário..." :class="inputClass"
                                 rows="3"></textarea>
+                        </div>
+
+                        <!-- Upload de Logo -->
+                        <div>
+                            <ImageUpload v-model="formData.logo" v-model:posicao="formData.logo_posicao"
+                                label="Logo do Formulário"
+                                description="Arraste uma imagem ou clique para selecionar o logo"
+                                :preview-url="formData.logo_url" @error="(err) => showToast(err, 'error')" />
                         </div>
 
                         <!-- Categoria e Lei -->
@@ -334,6 +376,27 @@ const showPreview = ref(false);
                                 </Label>
                                 <input id="expires_at" type="datetime-local" v-model="formData.expires_at"
                                     :class="inputClass" />
+                            </div>
+                        </div>
+
+                        <!-- Cores -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <Label for="primary_color" class="text-gray-700 flex items-center gap-2">
+                                    <Palette class="w-4 h-4" />
+                                    Cor Primária
+                                </Label>
+                                <ColorPicker id="primary_color" v-model="formData.primary_color"
+                                    description="Cor principal do formulário, usada em botões e destaques" />
+                            </div>
+
+                            <div>
+                                <Label for="secondary_color" class="text-gray-700 flex items-center gap-2">
+                                    <Paintbrush class="w-4 h-4" />
+                                    Cor Secundária
+                                </Label>
+                                <ColorPicker id="secondary_color" v-model="formData.secondary_color"
+                                    description="Cor secundária para detalhes e elementos de fundo" />
                             </div>
                         </div>
 
@@ -482,6 +545,15 @@ const showPreview = ref(false);
             <div v-else class="lg:col-span-2">
                 <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-8 max-w-2xl mx-auto">
                     <div class="border-b pb-6 mb-6">
+                        <!-- Logo no Preview com posição -->
+                        <div v-if="formData.logo_url" class="mb-4" :class="{
+                            'text-left': formData.logo_posicao === 'esquerda',
+                            'text-center': formData.logo_posicao === 'centro',
+                            'text-right': formData.logo_posicao === 'direita'
+                        }">
+                            <img :src="formData.logo_url" alt="Logo" class="h-16 object-contain inline-block" />
+                        </div>
+
                         <h1 class="text-2xl font-bold text-gray-900 mb-2">
                             {{ formData.title || 'Sem título' }}
                         </h1>
