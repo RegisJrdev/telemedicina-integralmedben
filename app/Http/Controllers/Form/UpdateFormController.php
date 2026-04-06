@@ -20,18 +20,21 @@ class UpdateFormController extends Controller
             DB::beginTransaction();
             $validated = $request->validated();
             $form->update([
-                'title'           => $validated['title'],
-                'description'     => $validated['description'] ?? null,
-                'categoria_id'    => $validated['categoria_id'] ?? null,
-                'lei_id'          => $validated['lei_id'] ?? null,
-                'status'          => $validated['status'],
-                'is_public'       => $validated['is_public'] ?? false,
-                'published_at'    => $validated['published_at'] ?? null,
-                'primary_color'   => $validated['primary_color'] ?? '#22d3ee',
-                'secondary_color' => $validated['secondary_color'] ?? '#06b6d4',
-                'expires_at'      => $validated['expires_at'] ?? null,
-                'response_limit'  => $validated['response_limit'] ?? null,
-                'settings'        => $validated['settings'] ?? null,
+                'title'                   => $validated['title'],
+                'description'             => $validated['description'] ?? null,
+                'categoria_id'            => $validated['categoria_id'] ?? null,
+                'lei_id'                  => $validated['lei_id'] ?? null,
+                'status'                  => $validated['status'],
+                'is_public'               => $validated['is_public'] ?? false,
+                'published_at'            => $validated['published_at'] ?? null,
+                'primary_color'           => $validated['primary_color'] ?? '#22d3ee',
+                'secondary_color'         => $validated['secondary_color'] ?? '#06b6d4',
+                'expires_at'              => $validated['expires_at'] ?? null,
+                'response_limit'          => $validated['response_limit'] ?? null,
+                'settings'                => $validated['settings'] ?? null,
+                'btn_confirmar_descricao' => $validated['btn_confirmar_descricao'] ?? null,
+                'sub_descricao'           => $validated['sub_descricao'] ?? null,
+                'observacao'              => $validated['observacao'] ?? null,
             ]);
             $this->syncLogo($form, $request, $validated);
             if (isset($validated['fields'])) {

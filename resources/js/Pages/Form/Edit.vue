@@ -79,6 +79,9 @@ const formData = ref({
     response_limit: props.form.response_limit || '',
     primary_color: props.form.primary_color || '#22d3ee',
     secondary_color: props.form.secondary_color || '#06b6d4',
+    btn_confirmar_descricao: props.form?.btn_confirmar_descricao ?? 'ENVIAR CADASTRO',
+    sub_descricao: props.form?.sub_descricao ?? null,
+    observacao: props.form?.observacao ?? null,
     logo: null,
     logo_url: props.form.logo_url || null,
     logo_posicao: props.form.logo_posicao || 'centro',
@@ -265,12 +268,43 @@ const saveForm = async (publish = false) => {
                             <input id="title" v-model="formData.title" placeholder="Ex: Pesquisa de Satisfação"
                                 :class="inputClass" required />
                         </div>
-
                         <div>
                             <Label for="description" class="text-gray-700">Descrição</Label>
                             <textarea id="description" v-model="formData.description"
                                 placeholder="Descreva o objetivo deste formulário..." :class="inputClass"
                                 rows="3"></textarea>
+                        </div>
+
+                        <!-- Campos do Botão e Descrições -->
+                        <div class="space-y-4">
+                            <!-- Texto do Botão Confirmar -->
+                            <div>
+                                <Label for="btn_confirmar_descricao" class="flex items-center gap-1 text-gray-700 pb-1">
+                                    Texto do Botão de Confirmação
+                                    <span class="text-red-500">*</span>
+                                </Label>
+                                <input id="btn_confirmar_descricao" v-model="formData.btn_confirmar_descricao"
+                                    placeholder="Ex: ENVIAR CADASTRO, CONFIRMAR, SALVAR" :class="inputClass" />
+                            </div>
+
+                            <!-- Sub Descrição -->
+                            <div>
+                                <Label for="sub_descricao" class="flex items-center gap-1 text-gray-700 pb-1">
+                                    Sub Descrição
+                                </Label>
+                                <input id="sub_descricao" v-model="formData.sub_descricao"
+                                    placeholder="Ex: Preencha todos os campos obrigatórios" :class="inputClass" />
+                            </div>
+
+                            <!-- Observação -->
+                            <!-- <div>
+                                <Label for="observacao" class="flex items-center gap-1 text-gray-700 pb-1">
+                                    Observação
+                                </Label>
+                                <textarea id="observacao" v-model="formData.observacao"
+                                    placeholder="Ex: Informações adicionais sobre o formulário..." :class="inputClass"
+                                    rows="3"></textarea>
+                            </div> -->
                         </div>
 
                         <div>

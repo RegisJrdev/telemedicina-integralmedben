@@ -21,6 +21,7 @@ class PublicFormController extends Controller
     {
         return $form->status === 'ativo';
     }
+
     private function getLogoData(Form $form): ?array
     {
         $logoArquivo = $form->arquivos->first();
@@ -32,6 +33,36 @@ class PublicFormController extends Controller
             'posicao' => $logoArquivo->pivot->posicao ?? 'centro',
         ];
     }
+
+    // ⭐ Converte data brasileira (DD/MM/YYYY) para formato ISO (YYYY-MM-DD) para salvar
+    private function convertBrazilianDateToISO(string $date): string
+    {
+        $parts = explode('/', $date);
+        if (count($parts) === 3) {
+            return "{$parts[2]}-{$parts[1]}-{$parts[0]}";
+        }
+        return $date;
+    }
+
+    // ⭐ Verifica se é campo de data
+    private function isDateField($field): bool
+    {
+        $label = strtolower($field->label);
+        return $field->type === 'date' ||
+        str_contains($label, 'nascimento') ||
+        str_contains($label, 'data') ||
+        str_contains($label, 'birth');
+    }
+
+    // ⭐ Verifica se é campo de CPF
+    private function isCPFField($field): bool
+    {
+        $label = strtolower($field->label);
+        return $field->type === 'cpf' ||
+        str_contains($label, 'cpf') ||
+        str_contains($label, 'c.p.f');
+    }
+
     public function show(string $slug): Response
     {
         try {
@@ -66,14 +97,17 @@ class PublicFormController extends Controller
                 ]);
                 return Inertia::render('Form/Public/Show', [
                     'form'        => [
-                        'title'           => $form->title,
-                        'status'          => $form->status,
-                        'statusLabel'     => $label,
-                        'primary_color'   => $form->primary_color,
-                        'secondary_color' => $form->secondary_color,
-                        'lei'             => $form->lei,
-                        'logo'            => $logoData,
-                        'message'         => "Este formulário está {$label} e não pode receber respostas no momento.",
+                        'title'                   => $form->title,
+                        'status'                  => $form->status,
+                        'statusLabel'             => $label,
+                        'primary_color'           => $form->primary_color,
+                        'secondary_color'         => $form->secondary_color,
+                        'lei'                     => $form->lei,
+                        'logo'                    => $logoData,
+                        'btn_confirmar_descricao' => $form->btn_confirmar_descricao ?? null,
+                        'sub_descricao'           => $form->sub_descricao ?? null,
+                        'observacao'              => $form->observacao ?? null,
+                        'message'                 => "Este formulário está {$label} e não pode receber respostas no momento.",
                         'instruction' => 'Para permitir o preenchimento, altere o status para "Ativo" nas configurações.',
                         'canActivate' => true,
                     ],
@@ -87,17 +121,21 @@ class PublicFormController extends Controller
                 ]);
                 return Inertia::render('Form/Public/Show', [
                     'form' => [
-                        'title'           => $form->title,
-                        'slug'            => $slug,
-                        'status'          => 'expirado',
-                        'statusLabel'     => 'expirado',
-                        'primary_color'   => $form->primary_color,
-                        'secondary_color' => $form->secondary_color,
-                        'lei'             => $form->lei,
-                        'logo'            => $logoData,
-                        'message'         => 'Este formulário expirou e não está mais disponível para respostas.',
-                        'instruction'     => 'Renove a data de expiração nas configurações para reativá-lo.',
-                        'canActivate'     => false,
+                        'title'                   => $form->title,
+                        'slug'                    => $slug,
+                        'status'                  => 'expirado',
+                        'statusLabel'             => 'expirado',
+                        'primary_color'           => $form->primary_color,
+                        'secondary_color'         => $form->secondary_color,
+                        'lei'                     => $form->lei,
+                        'logo'                    => $logoData,
+                        'btn_confirmar_descricao' => $form->btn_confirmar_descricao ?? null,
+                        'sub_descricao'           => $form->sub_descricao ?? null,
+                        'observacao'              => $form->observacao ?? null,
+
+                        'message'                 => 'Este formulário expirou e não está mais disponível para respostas.',
+                        'instruction'             => 'Renove a data de expiração nas configurações para reativá-lo.',
+                        'canActivate'             => false,
                     ],
                 ]);
             }
@@ -110,35 +148,41 @@ class PublicFormController extends Controller
                 ]);
                 return Inertia::render('Form/Public/Show', [
                     'form' => [
-                        'title'           => $form->title,
-                        'primary_color'   => $form->primary_color,
-                        'secondary_color' => $form->secondary_color,
-                        'lei'             => $form->lei,
-                        'status'          => 'limite_atingido',
-                        'statusLabel'     => 'com limite atingido',
-                        'message'         => 'Este formulário atingiu o limite máximo de respostas.',
-                        'instruction'     => 'Aumente o limite de respostas nas configurações ou crie um novo formulário.',
-                        'canActivate'     => false,
-                        'logo'            => $logoData,
+                        'title'                   => $form->title,
+                        'primary_color'           => $form->primary_color,
+                        'secondary_color'         => $form->secondary_color,
+                        'lei'                     => $form->lei,
+                        'btn_confirmar_descricao' => $form->btn_confirmar_descricao ?? null,
+                        'sub_descricao'           => $form->sub_descricao ?? null,
+                        'observacao'              => $form->observacao ?? null,
+                        'status'                  => 'limite_atingido',
+                        'statusLabel'             => 'com limite atingido',
+                        'message'                 => 'Este formulário atingiu o limite máximo de respostas.',
+                        'instruction'             => 'Aumente o limite de respostas nas configurações ou crie um novo formulário.',
+                        'canActivate'             => false,
+                        'logo'                    => $logoData,
                     ],
                 ]);
             }
             return Inertia::render('Form/Public/Show', [
                 'form' => [
-                    'id'              => $form->id,
-                    'title'           => $form->title,
-                    'slug'            => $slug,
-                    'description'     => $form->description,
-                    'expires_at'      => $form->expires_at,
-                    'response_limit'  => $form->response_limit,
-                    'responses_count' => $form->responses_count,
-                    'is_public'       => $form->is_public,
-                    'primary_color'   => $form->primary_color,
-                    'secondary_color' => $form->secondary_color,
-                    'lei'             => $form->lei,
-                    'status'          => $form->status,
-                    'logo'            => $logoData,
-                    'fields'          => $form->fields->map(fn($f) => [
+                    'id'                      => $form->id,
+                    'title'                   => $form->title,
+                    'slug'                    => $slug,
+                    'description'             => $form->description,
+                    'expires_at'              => $form->expires_at,
+                    'response_limit'          => $form->response_limit,
+                    'responses_count'         => $form->responses_count,
+                    'is_public'               => $form->is_public,
+                    'primary_color'           => $form->primary_color,
+                    'secondary_color'         => $form->secondary_color,
+                    'lei'                     => $form->lei,
+                    'status'                  => $form->status,
+                    'logo'                    => $logoData,
+                    'btn_confirmar_descricao' => $form->btn_confirmar_descricao ?? null,
+                    'sub_descricao'           => $form->sub_descricao ?? null,
+                    'observacao'              => $form->observacao ?? null,
+                    'fields'                  => $form->fields->map(fn($f) => [
                         'id'          => $f->id,
                         'type'        => $f->type,
                         'label'       => $f->label,
@@ -146,6 +190,8 @@ class PublicFormController extends Controller
                         'required'    => $f->required,
                         'options'     => $f->options,
                         'help_text'   => $f->help_text,
+                        'is_date'     => $this->isDateField($f),
+                        'is_cpf'      => $this->isCPFField($f),
                     ]),
                 ],
             ]);
@@ -160,12 +206,14 @@ class PublicFormController extends Controller
             abort(500, 'Erro ao carregar o formulário. Tente novamente mais tarde.');
         }
     }
+
     public function store(Request $request, string $slug): RedirectResponse
     {
         DB::beginTransaction();
         try {
             $form = Form::where('slug', $slug)
                 ->where('is_public', true)
+                ->with('fields')
                 ->lockForUpdate()
                 ->first();
             if (! $form) {
@@ -191,8 +239,10 @@ class PublicFormController extends Controller
                 DB::rollBack();
                 abort(403, 'Limite de respostas atingido.');
             }
+
             $rules    = [];
             $messages = [];
+
             foreach ($form->fields as $field) {
                 $fieldRules = [];
                 if ($field->required) {
@@ -201,6 +251,7 @@ class PublicFormController extends Controller
                 } else {
                     $fieldRules[] = 'nullable';
                 }
+
                 switch ($field->type) {
                     case 'email':
                         $fieldRules[] = 'email:rfc,dns';
@@ -209,21 +260,49 @@ class PublicFormController extends Controller
                         $fieldRules[] = 'numeric';
                         break;
                     case 'date':
-                        $fieldRules[] = 'date';
+                        // ⭐ VALIDAÇÃO: Espera formato brasileiro DD/MM/YYYY
+                        $fieldRules[]                                 = 'date_format:d/m/Y';
+                        $messages["answers.{$field->id}.date_format"] = "O campo \"{$field->label}\" deve estar no formato DD/MM/AAAA.";
+                        break;
+                    case 'cpf':
+                        // ⭐ VALIDAÇÃO NUMERIC PARA CPF (11 dígitos)
+                        $fieldRules[]                             = 'numeric';
+                        $fieldRules[]                             = 'digits:11';
+                        $messages["answers.{$field->id}.numeric"] = "O campo \"{$field->label}\" deve conter apenas números.";
+                        $messages["answers.{$field->id}.digits"]  = "O campo \"{$field->label}\" deve ter exatamente 11 dígitos.";
                         break;
                 }
+
                 $rules["answers.{$field->id}"] = $fieldRules;
             }
+
             $validated = $request->validate($rules, $messages);
+
+            // ⭐ PROCESSA RESPOSTAS: Converte datas brasileiras para ISO antes de salvar
+            $processedAnswers = [];
+            foreach ($form->fields as $field) {
+                $answer = $validated['answers'][$field->id] ?? null;
+
+                if ($answer && $this->isDateField($field)) {
+                    // Converte DD/MM/YYYY -> YYYY-MM-DD para salvar no banco
+                    $processedAnswers[$field->id] = $this->convertBrazilianDateToISO($answer);
+                } else {
+                    // CPF e outros campos: mantém como está
+                    $processedAnswers[$field->id] = $answer;
+                }
+            }
+
             FormResponse::create([
                 'form_id'    => $form->id,
                 'user_id'    => auth()->id(),
-                'answers'    => $validated['answers'],
+                'answers'    => $processedAnswers,
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent(),
             ]);
+
             $form->increment('responses_count');
             DB::commit();
+
             return redirect()
                 ->route('forms.public.thanks', $slug)
                 ->with('success', 'Resposta enviada com sucesso!');
@@ -242,6 +321,7 @@ class PublicFormController extends Controller
                 ->with('error', 'Erro ao enviar resposta. Tente novamente.');
         }
     }
+
     public function thanks(string $slug): Response
     {
         $form = Form::where('slug', $slug)
