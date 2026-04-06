@@ -33,6 +33,9 @@ class Form extends Model
         'is_public',
         'settings',
         'responses_count',
+        'btn_confirmar_descricao',
+        'sub_descricao',
+        'observacao',
         'status',
     ];
     protected $appends = ['logo_url'];
