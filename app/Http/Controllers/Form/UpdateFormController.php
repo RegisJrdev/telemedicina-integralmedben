@@ -121,6 +121,15 @@ class UpdateFormController extends Controller
         $disk             = 'public';
         $this->criarDiretorioSeNaoExistir($caminhoDiretorio, $disk);
         $file->storeAs($caminhoDiretorio, $nomeArmazenado, $disk);
+        $arquivosExistentes = FormArquivo::where('form_id', $form->id)->get();
+        foreach ($arquivosExistentes as $formArquivo) {
+            if ($formArquivo->arquivo) {
+                Storage::disk($formArquivo->arquivo->disk)->delete($formArquivo->arquivo->caminho);
+                $formArquivo->arquivo->delete();
+            }
+            $formArquivo->delete();
+        }
+
         $arquivo = Arquivo::create([
             'nome_original'   => $nomeOriginal,
             'nome_armazenado' => $nomeArmazenado,

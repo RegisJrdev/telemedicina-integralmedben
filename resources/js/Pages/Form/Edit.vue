@@ -91,6 +91,7 @@ const formData = ref({
     credencia_cluble_id: props.form?.credencia_cluble_id ?? null,
     logo: null,
     logo_url: props.form?.logo_url || null,
+    existe_file: props.form?.existe_file || false,
     logo_posicao: props.form?.logo_posicao || 'centro',
     settings: props.form?.settings || {
         allow_multiple: false,
@@ -262,14 +263,20 @@ const showPreview = ref(false);
                     {{ showPreview ? 'Editar' : 'Preview' }}
                 </Button>
 
-                <Button variant="outline" @click="saveForm(false)" :disabled="saving" class="gap-2">
+                <Button v-if="formData.status != 'ativo'" variant="outline" @click="saveForm(false)" :disabled="saving"
+                    class="gap-2">
                     <Save class="w-4 h-4" />
                     Salvar Rascunho
                 </Button>
 
                 <Button variant="primary" @click="saveForm(true)" :disabled="saving || !formData.title" class="gap-2">
                     <Globe class="w-4 h-4" />
-                    Publicar
+                    <div v-if="formData.status == 'ativo'">
+                        Atualizar
+                    </div>
+                    <div v-else>
+                        Publicar
+                    </div>
                 </Button>
             </div>
         </div>

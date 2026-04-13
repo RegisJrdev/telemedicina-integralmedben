@@ -8,6 +8,7 @@ use App\Models\FormArquivo;
 use App\Models\FormCategory;
 use App\Models\Lei;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -61,22 +62,22 @@ class EditFormController extends Controller
     }
     private function getLogoData(Form $form): ?array
     {
-        $logoArquivo = $form->arquivos->first();
-        $posicao     = 'centro';
+        $logoArquivo = $form->arquivos->whereNull('deleted_at')->first();
+
         if (! $logoArquivo) {
             return null;
         }
 
-        $formArquvio = FormArquivo::where('form_id', $logoArquivo->pivot->form_id)->firstOrFail();
-
-        if ($formArquvio) {
-            $posicao = $formArquvio->posicao;
-        }
+        $formArquivo = FormArquivo::where('form_id', $logoArquivo->pivot->form_id)
+            ->whereNull('deleted_at')
+            ->first();
 
         return [
-            'url'     => $logoArquivo->url,
-            'posicao' => $posicao,
+            'url'         => $logoArquivo->url,
+            'posicao'     => $formArquivo?->posicao ?? 'centro',
+            'existe_file' => Storage::disk('public')->exists($logoArquivo->caminho),
         ];
+
     }
     public function formatFormData(Form $form): array
     {
@@ -104,6 +105,7 @@ class EditFormController extends Controller
             'secondary_color'         => $form->secondary_color,
             'logo_url'                => $logoData['url'] ?? null,
             'logo_posicao'            => $logoData['posicao'] ?? 'centro',
+            'existe_file'             => $logoData['existe_file'] ?? false,
             'btn_confirmar_descricao' => $form->btn_confirmar_descricao ?? null,
             'sub_descricao'           => $form->sub_descricao ?? null,
             'observacao'              => $form->observacao ?? null,
