@@ -197,7 +197,7 @@ const progress = computed(() => {
             <div class="bg-white flex flex-col items-center justify-center p-8 lg:p-16 relative">
                 <div class="max-w-md w-full text-center">
                     <div v-if="formLogo" class="mb-8">
-                        <img :src="formLogo" :alt="formTitle" class="max-h-32 w-auto object-contain mx-auto" />
+                        <img :src="formLogo" :alt="formTitle" class="max-h-48 w-auto object-contain mx-auto" />
                     </div>
                     <div v-else class="mb-8">
                         <div class="inline-flex items-center justify-center w-24 h-24 rounded-2xl mb-4 shadow-xl"

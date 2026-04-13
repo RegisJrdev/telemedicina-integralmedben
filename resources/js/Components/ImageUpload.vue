@@ -42,6 +42,10 @@ const props = defineProps({
     showPosicaoSelector: {
         type: Boolean,
         default: true
+    },
+    existeFile: {
+        type: Boolean,
+        default: false
     }
 });
 const emit = defineEmits(['update:modelValue', 'update:posicao', 'error']);

@@ -7,6 +7,7 @@ use App\Models\Form;
 use App\Models\FormArquivo;
 use App\Models\FormResponse;
 use App\Services\ClubleBeneficiarioService;
+use App\Services\SimpleSmsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,8 +21,10 @@ use Throwable;
 class PublicFormController extends Controller
 {
     public function __construct(
-        protected ClubleBeneficiarioService $beneficiarioService
+        protected ClubleBeneficiarioService $beneficiarioService,
+        private SimpleSmsService $simpleSmsService
     ) {}
+
     private function canAcceptResponses(Form $form): bool
     {
         return $form->status === 'ativo';
@@ -39,7 +42,6 @@ class PublicFormController extends Controller
         ];
     }
 
-    // ⭐ Converte data brasileira (DD/MM/YYYY) para formato ISO (YYYY-MM-DD) para salvar
     private function convertBrazilianDateToISO(string $date): string
     {
         $parts = explode('/', $date);
@@ -368,12 +370,26 @@ class PublicFormController extends Controller
         // Mapeia respostas
         $dados = $this->mapearRespostasPorOrdem($fields, $answers);
 
+        if (! empty($dados['cellphone'])) {
+            $empresa = $form->title ?? 'Empresa';
+            $cliente = $dados['name'] ?? 'Cliente';
+            $data    = now()->format('d/m/Y');
+            $hora    = now()->format('H:i');
+
+            $conteudo = "$empresa, Olá $cliente! Seu cadastro foi confirmado no dia $data às $hora.";
+
+            $resultado = $this->simpleSmsService->send(
+                $dados['cellphone'],
+                $conteudo,
+
+            );
+        }
+
         Log::info('Dados mapeados para API Clube', [
             'form_id' => $form->id,
             'dados'   => $dados,
         ]);
 
-        // Valida dados obrigatórios (name, email, cpf são required na API)
         if (empty($dados['name']) || empty($dados['email']) || empty($dados['cpf'])) {
             Log::warning('Dados obrigatórios faltando', [
                 'form_id'   => $form->id,
@@ -412,10 +428,8 @@ class PublicFormController extends Controller
      */
     private function mapearRespostasPorOrdem($fields, array $answers): array
     {
-        // Respostas em array indexado (0, 1, 2, 3, 4...)
         $respostas = array_values($answers);
 
-        // Inicializa com valores padrão (todos opcionais exceto obrigatórios)
         $dados = [
             'name'            => null,  // required
             'email'           => null,  // required

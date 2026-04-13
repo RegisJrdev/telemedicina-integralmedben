@@ -51,19 +51,19 @@ const togglePicker = () => {
     }
 };
 
-const presets = [
-    { name: 'Ciano', value: '#22d3ee' },
-    { name: 'Azul', value: '#3B82F6' },
-    { name: 'Verde', value: '#10B981' },
-    { name: 'Roxo', value: '#8B5CF6' },
-    { name: 'Rosa', value: '#EC4899' },
-    { name: 'Laranja', value: '#F97316' },
-    { name: 'Vermelho', value: '#EF4444' },
-    { name: 'Amarelo', value: '#EAB308' },
-    { name: 'Cinza', value: '#6B7280' },
-    { name: 'Preto', value: '#111827' },
-];
-
+// const presets = [
+//     { name: 'Ciano', value: '#22d3ee' },
+//     { name: 'Azul', value: '#3B82F6' },
+//     { name: 'Verde', value: '#10B981' },
+//     { name: 'Roxo', value: '#8B5CF6' },
+//     { name: 'Rosa', value: '#EC4899' },
+//     { name: 'Laranja', value: '#F97316' },
+//     { name: 'Vermelho', value: '#EF4444' },
+//     { name: 'Amarelo', value: '#EAB308' },
+//     { name: 'Cinza', value: '#6B7280' },
+//     { name: 'Preto', value: '#111827' },
+// ];
+const presets = [];
 const applyPreset = (color) => {
     pickerColor.value = color;
 };
@@ -87,9 +87,9 @@ const applyPreset = (color) => {
             </button>
 
             <div class="flex-1 relative">
-                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-mono text-sm">#</span>
+                <!-- <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-mono text-sm">#</span> -->
                 <input type="text" v-model="pickerColor" placeholder="22d3ee" maxlength="7"
-                    class="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono uppercase text-sm" />
+                    class="w-full pl-2 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono uppercase text-sm" />
             </div>
         </div>
 
@@ -101,7 +101,7 @@ const applyPreset = (color) => {
         </div>
 
         <!-- Presets rápidos -->
-        <div class="flex flex-wrap gap-2 pt-1">
+        <div class="flex flex-wrap ">
             <button v-for="preset in presets" :key="preset.value" @click="applyPreset(preset.value)" type="button"
                 class="w-6 h-6 rounded-full border-2 border-transparent hover:scale-110 transition-all focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-cyan-500"
                 :class="{ 'ring-2 ring-offset-1 ring-cyan-500': modelValue.toUpperCase() === preset.value.toUpperCase() }"
