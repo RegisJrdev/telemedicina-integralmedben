@@ -40,14 +40,14 @@ defineProps({
 
             <!-- Ações -->
             <div class="mt-8 space-y-3">
-                <Link :href="route('forms.index')">
+                <!-- <Link :href="route('forms.index')">
                     <Button variant="outline" class="w-full gap-2">
                         <FileText class="w-4 h-4" />
                         Ver mais formulários
                     </Button>
-                </Link>
+                </Link> -->
 
-                <Button variant="ghost" class="w-full gap-2 text-gray-500"
+                <Button variant="outline" class="w-full gap-2 text-gray-500"
                     @click="router.visit(route('forms.public.show', form.slug))">
                     <ArrowLeft class="w-4 h-4" />
                     Responder novamente

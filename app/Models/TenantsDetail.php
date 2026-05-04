@@ -3,10 +3,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class TenantsDetail extends Model
 {
     use SoftDeletes;
+    protected $connection = 'mysql';
 
     protected $table = 'tenants_details';
 
@@ -22,6 +24,16 @@ class TenantsDetail extends Model
         'favicon',
         'cor_primaria',
         'cor_secundaria',
+
+    ];
+
+    protected $casts = [
+        'cor_primaria'   => 'string',
+        'cor_secundaria' => 'string',
+    ];
+
+    protected $appends = [
+        'sigla',
     ];
 
     public function tenant()
@@ -33,4 +45,21 @@ class TenantsDetail extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function form()
+    {
+        return $this->belongsTo(Form::class, 'form_id', 'id');
+    }
+
+    public function getSiglaAttribute(): ?string
+    {
+        if (blank($this->descricao)) {
+            return null;
+        }
+
+        $limpo = preg_replace('/[^\p{L}\p{N}]/u', '', $this->descricao);
+
+        return Str::upper(Str::substr($limpo, 0, 3));
+    }
+
 }

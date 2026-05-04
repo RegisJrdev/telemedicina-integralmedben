@@ -12,6 +12,8 @@ use Illuminate\Support\Str;
 class Form extends Model
 {
     use HasFactory, SoftDeletes;
+    protected $connection = 'mysql';
+
     public const STATUS_RASCUNHO  = 'rascunho';
     public const STATUS_ATIVO     = 'ativo';
     public const STATUS_PAUSADO   = 'pausado';
@@ -39,8 +41,14 @@ class Form extends Model
         'observacao',
         'status',
     ];
-    protected $appends = ['logo_url'];
-    protected $casts   = [
+    protected $appends = [
+        'logo_url',
+        'expires_at_br',
+        'created_at_br',
+        'updated_at_br',
+        'atual_at_br',
+    ];
+    protected $casts = [
         'is_public'       => 'boolean',
         'published_at'    => 'datetime',
         'expires_at'      => 'datetime',
@@ -52,6 +60,25 @@ class Form extends Model
         'updated_at'      => 'datetime',
         'deleted_at'      => 'datetime',
     ];
+
+    public function getAtualAtBrAttribute()
+    {
+        return now()->format('d/m/Y H:i');
+    }
+
+    public function getCreatedAtBrAttribute()
+    {
+        return $this->created_at ? $this->created_at->format('d/m/Y H:i') : null;
+    }
+    public function getUpdatedAtBrAttribute()
+    {
+        return $this->updated_at ? $this->updated_at->format('d/m/Y H:i') : null;
+    }
+
+    public function getExpiresAtBrAttribute()
+    {
+        return $this->expires_at ? $this->expires_at->format('d/m/Y H:i') : null;
+    }
     protected function logoUrl(): \Illuminate\Database\Eloquent\Casts\Attribute
     {
         return \Illuminate\Database\Eloquent\Casts\Attribute::make(

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class TenantForm extends Model
 {
     use SoftDeletes;
+    protected $connection = 'mysql';
 
     public const ORIGEM_CENTRAL = 'CENTRAL';
     public const ORIGEM_CLIENTE = 'CLIENTE';

@@ -20,6 +20,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     protected $appends = [
         'tenant_domain',
         'photo_url',
+        'url',
     ];
 
     public function questions()
@@ -30,6 +31,12 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     public function smsTemplates()
     {
         return $this->belongsToMany(SmsTemplate::class, 'tenant_sms_templates');
+    }
+
+    public function details()
+    {
+        return $this->hasMany
+            (TenantsDetail::class, 'tenant_id');
     }
 
     public function centralPatients()
@@ -72,4 +79,20 @@ class Tenant extends BaseTenant implements TenantWithDatabase
 
         return null;
     }
+
+    public function getUrlAttribute()
+    {
+        if (! $this->tenant_domain) {
+            return null;
+        }
+
+        $domain = $this->tenant_domain;
+
+        if (str_contains($domain, 'localhost')) {
+            return 'http://' . $domain . ':8000';
+        }
+
+        return 'https://' . $domain;
+    }
+
 }

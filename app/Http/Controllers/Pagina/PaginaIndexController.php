@@ -11,7 +11,7 @@ class PaginaIndexController extends Controller
 {
     public function __invoke(Request $request): Response
     {
-        $tenants = Tenant::paginate(10);
+        $tenants = Tenant::with(['details', 'details.user'])->paginate(10);
 
         return Inertia::render('Pagina/Index', [
             'tenants' => $tenants,

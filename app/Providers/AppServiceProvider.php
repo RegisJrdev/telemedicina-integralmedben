@@ -9,6 +9,7 @@ use App\Listeners\SendNotificationOnPatientCreated;
 use App\Listeners\SyncPatientToCentral;
 use App\Notifications\Channels\SmsChannel;
 use App\Notifications\NotificationDispatcher;
+use App\Services\Tenant\TenantPublicService;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
@@ -47,9 +48,12 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(PatientCreated::class, SyncPatientToCentral::class);
         Event::listen(PatientCreated::class, SendNotificationOnPatientCreated::class);
         Event::listen(PatientCreated::class, RegisterPatientToExternalApis::class);
-
+        // $host          = request()->getHost();
+        // $currentTenant = str($host)->before('.')->toString();
+        // $current       = Tenant::with(['details'])->where('slug', $currentTenant)->first();
         Inertia::share([
-            'authUser'   => function () {
+            'tenant_public' => fn() => app(TenantPublicService::class)->current(),
+            'authUser'      => function () {
                 $user = auth()->user();
 
                 if (! $user) {
@@ -127,14 +131,14 @@ class AppServiceProvider extends ServiceProvider
             },
 
             // App info
-            'app'        => [
+            'app'           => [
                 'name' => config('app.name'),
                 'env'  => config('app.env'),
                 'url'  => config('app.url'),
             ],
 
             // Flash messages
-            'flash'      => function () {
+            'flash'         => function () {
                 return [
                     'message' => session('message'),
                     'type'    => session('type'),
@@ -142,7 +146,7 @@ class AppServiceProvider extends ServiceProvider
             },
 
             // CSRF
-            'csrf_token' => fn() => csrf_token(),
+            'csrf_token'    => fn()    => csrf_token(),
         ]);
     }
 }

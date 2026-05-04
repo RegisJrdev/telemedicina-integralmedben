@@ -196,8 +196,8 @@ const progress = computed(() => {
             <!-- LADO ESQUERDO: Logo -->
             <div class="bg-white flex flex-col items-center justify-center p-8 lg:p-16 relative">
                 <div class="max-w-md w-full text-center">
-                    <div v-if="formLogo" class="mb-8">
-                        <img :src="formLogo" :alt="formTitle" class="max-h-48 w-auto object-contain mx-auto" />
+                    <div v-if="formLogo" class="mb-8 group cursor-pointer"><img :src="formLogo" :alt="formTitle"
+                            class="w-full h-full object-contain" />
                     </div>
                     <div v-else class="mb-8">
                         <div class="inline-flex items-center justify-center w-24 h-24 rounded-2xl mb-4 shadow-xl"

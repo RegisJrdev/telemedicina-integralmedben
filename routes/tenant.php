@@ -1,9 +1,12 @@
 <?php
 
-declare(strict_types=1);
+declare (strict_types = 1);
 
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PublicFormController;
+use App\Http\Controllers\Tenant\Configuracao\ConfiguracaoController;
+use App\Http\Controllers\Tenant\Form\FormIndexController;
+use App\Http\Controllers\Tenant\Form\FormShowController;
 use App\Http\Controllers\Tenant\TenantAuthController;
 use App\Http\Controllers\Tenant\UserController;
 use Illuminate\Support\Facades\Route;
@@ -25,8 +28,11 @@ Route::middleware([
     InitializeTenancyByDomain::class,
     PreventAccessFromCentralDomains::class,
 ])->group(function () {
-    Route::get('/', [PublicFormController::class, 'show'])->name('public_form.show');
-    Route::post('/public-form', [PublicFormController::class, 'store'])->name('public_form.store');
+    // Route::get('/', [PublicFormController::class, 'show'])->name('public_form.show');
+    Route::get('/', [TenantAuthController::class, 'showLoginForm'])
+        ->name('public_form.show');
+
+    Route::get('/public-form', [PublicFormController::class, 'showLoginForm'])->name('public_form.store');
 
     Route::get('/admin/login', [TenantAuthController::class, 'showLoginForm'])->name('tenant.login');
     Route::post('/admin/login', [TenantAuthController::class, 'login']);
@@ -46,13 +52,30 @@ Route::middleware([
         Route::get('/patients/{patient}', [PatientController::class, 'show'])->name('patients.show');
         Route::get('/patients/{patient}/pdf', [PatientController::class, 'downloadPdf'])->name('patients.pdf');
         Route::post('/patients/{patient}/resend-sms', [PatientController::class, 'resendSms'])->name('patients.resend-sms');
+
+        Route::prefix('meus-formularios')->name('meus-formularios.')->group(function () {
+            Route::get('/', FormIndexController::class)->name('index');
+            Route::get('/{form}', FormShowController::class)->name('show');
+        });
+
+        Route::prefix('configuracao')
+            ->name('configuracao.')
+            ->controller(ConfiguracaoController::class)
+            ->group(function () {
+                Route::get('/', 'index')->name('index');
+                Route::post('/logo', [ConfiguracaoController::class, 'updateLogo'])
+                    ->name('logo.update');
+
+            });
+
     });
+
 });
 
 Route::middleware('tenant')->get('/teste', function () {
     return [
-        'host' => request()->getHost(),
+        'host'   => request()->getHost(),
         'tenant' => tenant('id'),
-        'db' => config('database.connections.tenant.database'),
+        'db'     => config('database.connections.tenant.database'),
     ];
 });

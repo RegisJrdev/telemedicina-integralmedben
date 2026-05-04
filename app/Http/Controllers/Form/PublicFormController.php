@@ -8,6 +8,7 @@ use App\Models\FormArquivo;
 use App\Models\FormResponse;
 use App\Services\ClubleBeneficiarioService;
 use App\Services\SimpleSmsService;
+use App\Services\Tenant\FormsResponseTenentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +23,9 @@ class PublicFormController extends Controller
 {
     public function __construct(
         protected ClubleBeneficiarioService $beneficiarioService,
-        private SimpleSmsService $simpleSmsService
+        private SimpleSmsService $simpleSmsService,
+        private FormsResponseTenentService $formsResponseTenentService
+
     ) {}
     private function canAcceptResponses(Form $form): bool
     {
@@ -291,6 +294,12 @@ class PublicFormController extends Controller
             if ($form->credencia_cluble_id) {
                 $this->sincronizarComClube($form, $formResponse, $validated['answers']);
             }
+            $host          = request()->getHost();
+            $currentTenant = str($host)->before('.')->toString();
+            if ($currentTenant != null) {
+                $this->formsResponseTenentService->create($currentTenant, $form->id, $formResponse->id);
+            }
+
             DB::commit();
             return redirect()
                 ->route('forms.public.thanks', $slug)

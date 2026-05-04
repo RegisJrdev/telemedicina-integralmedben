@@ -1,15 +1,15 @@
 <?php
-namespace App\Http\Controllers\Form;
+namespace App\Http\Controllers\Tenant\Form;
 
 use App\Http\Controllers\Controller;
 use App\Models\Form;
+use App\Models\FormsResponseTenent;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
-class ShowFormController extends Controller
+class FormShowController extends Controller
 {
-
     private function getLogoData(Form $form): ?array
     {
         $logoArquivo = $form->arquivos->first();
@@ -28,15 +28,25 @@ class ShowFormController extends Controller
             abort(403);
         }
         $form->load(['user:id,name', 'fields' => fn($q) => $q->orderBy('order')]);
-        $stats = [
-            'total_responses'  => $form->responses_count ?? 0,
-            'last_response_at' => $form->responses()->latest()->first()?->created_at?->format('d/m/Y H:i'),
+        $host                  = request()->getHost();
+        $currentTenant         = str($host)->before('.')->toString();
+        $currentTenantResponse = FormsResponseTenent::where('form_id', $form->id)
+            ->where('tenant_id', $currentTenant)
+            ->whereNotNull('response_id')
+            ->pluck('response_id')
+            ->toArray();
+        $responsesQuery = $form->responses()->with('user:id,name,email');
+        if (! empty($currentTenantResponse)) {
+            $responsesQuery->whereIn('id', $currentTenantResponse);
+        } else {
+            $responsesQuery->whereRaw('1 = 0');
+        }
+        $responses = $responsesQuery->latest()->paginate(20);
+        $stats     = [
+            'total_responses'  => count($currentTenantResponse),
+            'last_response_at' => $responses->first()?->created_at?->format('d/m/Y H:i'),
         ];
-        $responses = $form->responses()
-            ->with('user:id,name,email')
-            ->latest()
-            ->paginate(20);
-        return Inertia::render('Form/Show', [
+        return Inertia::render('Tenant/Form/Show', [
             'form'      => [
                 'id'              => $form->id,
                 'code'            => $form->code,
@@ -45,7 +55,7 @@ class ShowFormController extends Controller
                 'description'     => $form->description,
                 'status'          => $form->status,
                 'is_public'       => $form->is_public,
-                'responses_count' => $form->responses_count,
+                'responses_count' => count($currentTenantResponse),
                 'created_by'      => $form->user->name,
                 'primary_color'   => $form->primary_color,
                 'secondary_color' => $form->secondary_color,
@@ -53,7 +63,7 @@ class ShowFormController extends Controller
                 'categoria_id'    => $form->categoria_id,
                 'settings'        => $form->settings,
                 'lei'             => $form->lei,
-                'responses'       => $form->responses()->count(),
+                'responses'       => count($currentTenantResponse),
                 'categoria'       => $form->categoria,
                 'logo'            => $this->getLogoData($form),
                 'fields'          => $form->fields->map(fn($f) => [

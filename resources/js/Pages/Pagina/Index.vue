@@ -5,8 +5,9 @@ import { Pencil, Trash2, Plus, Search, X, Building2, ShieldAlert, Globe, Databas
 import { ref, computed, watch } from 'vue';
 import Button from '@/Components/ui/button/Button.vue';
 import ConfirmDeleteModal from '@/Components/ConfirmDeleteModal.vue';
-
-// ✅ ALTERADO: tenant → tenants (recebe objeto paginado do Laravel)
+import PomponeteLink from '@/Components/PomponeteLink.vue';
+import DetailCard from '@/Components/DetailCard.vue';
+import PaginationSimple from '@/Components/PaginationSimple.vue'
 const props = defineProps({
     tenants: {
         type: Object,
@@ -62,13 +63,13 @@ const performSearch = () => {
         const params = {};
         if (search.value.trim()) params.search = search.value.trim();
         router.get(
-            route('pagina.index'),  // ✅ ALTERADO: route correta
+            route('pagina.index'),
             params,
             {
                 preserveState: true,
                 preserveScroll: true,
                 replace: true,
-                only: ['tenants', 'filters']  // ✅ ALTERADO: tenants
+                only: ['tenants', 'filters']
             }
         );
     }, 300);
@@ -107,7 +108,6 @@ const closeDeleteModal = () => {
 const confirmDelete = () => {
     if (!deleteModal.value.tenant) return;
     deleteModal.value.isProcessing = true;
-    // ✅ ALTERADO: route correta
     router.delete(route('pagina.destroy', deleteModal.value.tenant.id), {
         preserveScroll: true,
         onSuccess: () => {
@@ -190,7 +190,6 @@ const navigateTo = (routeName, params = {}) => {
                     Gerenciar Páginas
                 </h2>
                 <p class="text-sm text-gray-500 mt-1">
-                    <!-- ✅ ALTERADO: props.tenant → props.tenants -->
                     {{ hasTenants ? `${props.tenants.total} tenant(s) cadastrado(s)` : 'Nenhum tenant cadastrado' }}
                 </p>
             </div>
@@ -202,7 +201,6 @@ const navigateTo = (routeName, params = {}) => {
         </div>
 
         <div class="py-6">
-            <!-- Flash Messages -->
             <div v-if="flashMessage" :class="[
                 'mb-4 p-4 rounded-lg text-sm font-medium',
                 flashType === 'success' ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800 border border-red-200'
@@ -211,7 +209,6 @@ const navigateTo = (routeName, params = {}) => {
             </div>
 
             <div class="mx-auto sm:px-6 lg:px-4 space-y-4">
-                <!-- Barra de ferramentas -->
                 <div
                     class="flex flex-col lg:flex-row gap-3 justify-between items-start lg:items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                     <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
@@ -229,7 +226,6 @@ const navigateTo = (routeName, params = {}) => {
                                 <X class="h-4 w-4" />
                             </button>
                         </div>
-                        <!-- Badge de filtros ativos -->
                         <button v-if="hasActiveFilters" @click="clearSearch"
                             class="flex items-center gap-1 px-3 py-1 text-xs font-medium text-cyan-700 bg-cyan-100 rounded-full hover:bg-cyan-200 transition-colors">
                             <X class="w-3 h-3" />
@@ -251,12 +247,10 @@ const navigateTo = (routeName, params = {}) => {
                     </div>
                 </div>
 
-                <!-- Indicador de busca -->
                 <div v-if="hasActiveFilters && hasTenants"
                     class="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
                     <Search class="w-4 h-4 text-cyan-600" />
                     <span>
-                        <!-- ✅ ALTERADO: props.tenant → props.tenants -->
                         Mostrando {{ props.tenants.total }} resultado(s)
                         <template v-if="search">
                             para "<span class="font-semibold text-cyan-700">{{ search }}</span>"
@@ -264,104 +258,90 @@ const navigateTo = (routeName, params = {}) => {
                     </span>
                 </div>
 
-                <!-- Tabela -->
                 <div class="border rounded-xl border-gray-200 bg-white shadow-sm overflow-hidden">
-                    <!-- ✅ REMOVIDO: <pre>{{ tenantList }}</pre> -->
-
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th
                                         class="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-500 tracking-wider">
-                                        ID</th>
+                                        ID
+                                    </th>
                                     <th
                                         class="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-500 tracking-wider">
-                                        Tenant</th>
+                                        Autor
+                                    </th>
                                     <th
                                         class="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-500 tracking-wider">
-                                        Domínio</th>
+                                        Tenant
+                                    </th>
                                     <th
                                         class="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-500 tracking-wider">
-                                        Status</th>
+                                        Domínio
+                                    </th>
+
                                     <th
                                         class="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-500 tracking-wider">
-                                        Banco de Dados</th>
+                                        Criado em
+                                    </th>
                                     <th
                                         class="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-500 tracking-wider">
-                                        Criado em</th>
+                                        Status
+                                    </th>
                                     <th
                                         class="px-6 py-3 text-right text-xs font-semibold uppercase text-gray-500 tracking-wider">
-                                        Ações</th>
+                                        Ações
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-200 bg-white">
                                 <tr v-for="item in tenantList" :key="item.id"
                                     class="hover:bg-gray-50 transition-colors group">
-                                    <!-- ID -->
                                     <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900 font-mono">
-                                        #{{ item.id }}
-                                    </td>
-                                    <!-- Tenant -->
-                                    <td class="px-6 py-4 text-sm">
-                                        <div class="flex items-center gap-3">
-                                            <div
-                                                class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white text-sm font-bold">
-                                                {{ getInitials(item.id) }}
+                                        <div v-if="item.details.length > 0">
+                                            <div v-for="detail in item.details" :key="detail.id"
+                                                class="text-xs text-gray-500">
+                                                {{ detail.code }}
                                             </div>
-                                            <div>
-                                                <div
-                                                    class="font-medium text-gray-900 group-hover:text-cyan-600 transition-colors">
-                                                    {{ item.id }}
-                                                </div>
-                                                <div v-if="item.data?.name"
-                                                    class="text-xs text-gray-500 truncate max-w-xs mt-0.5">
-                                                    {{ item.data.name }}
+                                        </div>
+                                    </td>
+                                    <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900 font-mono">
+                                        <div v-if="item.details.length > 0">
+                                            <div v-for="detail in item.details" :key="detail.id"
+                                                class="text-xs text-gray-500">
+                                                <div v-if="detail.user">
+                                                    {{ detail.user.name }}
                                                 </div>
                                             </div>
                                         </div>
                                     </td>
-                                    <!-- Domínio -->
+                                    <td class="px-6 py-4 text-sm">
+                                        <DetailCard v-for="detail in item.details" :key="detail.id" :detail="detail" />
+                                    </td>
                                     <td class="whitespace-nowrap px-6 py-4 text-sm">
                                         <div class="flex items-center gap-1.5">
-                                            <Globe class="w-3.5 h-3.5 text-gray-400" />
-                                            <span class="text-gray-600 font-mono text-xs">
-                                                {{ getTenantDomain(item.domains) }}
-                                            </span>
+                                            <PomponeteLink :url="item.url" :label="item.url" />
                                         </div>
                                     </td>
-                                    <!-- Status -->
+
+                                    <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                                        <time :title="formatDateTime(item.created_at)">
+                                            {{ formatDate(item.created_at) }}
+                                        </time>
+                                    </td>
                                     <td class="whitespace-nowrap px-6 py-4 text-sm">
                                         <span
                                             :class="['inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border', getStatusClass(getTenantStatus(item))]">
                                             {{ getStatusLabel(getTenantStatus(item)) }}
                                         </span>
                                     </td>
-                                    <!-- Banco de Dados -->
-                                    <td class="whitespace-nowrap px-6 py-4 text-sm">
-                                        <div class="flex items-center gap-1.5">
-                                            <Database class="w-3.5 h-3.5 text-gray-400" />
-                                            <span class="text-gray-600 font-mono text-xs">
-                                                {{ item.data?.database || 'tenant_' + item.id }}
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <!-- Criado em -->
-                                    <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                                        <time :title="formatDateTime(item.created_at)">
-                                            {{ formatDate(item.created_at) }}
-                                        </time>
-                                    </td>
-                                    <!-- Ações -->
                                     <td class="whitespace-nowrap px-6 py-4 text-right text-sm">
                                         <div class="flex justify-end gap-1">
-                                            <!-- Visualizar -->
                                             <button @click="navigateTo('pagina.show', item.id)"
                                                 class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all"
                                                 title="Visualizar">
                                                 <Building2 class="w-4 h-4" />
                                             </button>
-                                            <!-- Editar -->
                                             <button v-if="can.edit" @click="navigateTo('pagina.edit', item.id)"
                                                 class="p-2 text-cyan-600 hover:text-cyan-800 hover:bg-cyan-50 rounded-lg transition-all"
                                                 title="Editar">
@@ -371,7 +351,6 @@ const navigateTo = (routeName, params = {}) => {
                                                 title="Sem permissão para editar">
                                                 <Pencil class="w-4 h-4" />
                                             </span>
-                                            <!-- Excluir -->
                                             <button v-if="can.delete" @click="openDeleteModal(item)"
                                                 class="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-all"
                                                 title="Excluir">
@@ -388,7 +367,6 @@ const navigateTo = (routeName, params = {}) => {
                         </table>
                     </div>
 
-                    <!-- Estado vazio -->
                     <div v-if="!hasTenants" class="text-center py-16 text-gray-500">
                         <div v-if="hasActiveFilters" class="space-y-3">
                             <div class="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
@@ -412,33 +390,12 @@ const navigateTo = (routeName, params = {}) => {
                         </div>
                     </div>
 
-                    <!-- ✅ PAGINAÇÃO CORRIGIDA -->
-                    <div v-if="hasTenants && paginationLinks.length > 3"
-                        class="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50 gap-4">
-                        <div class="text-sm text-gray-500">
-                            <!-- ✅ ALTERADO: props.tenant → props.tenants -->
-                            Mostrando <span class="font-medium">{{ props.tenants.from || 0 }}</span> a
-                            <span class="font-medium">{{ props.tenants.to || 0 }}</span> de
-                            <span class="font-medium">{{ props.tenants.total || 0 }}</span> tenants
-                        </div>
-                        <div class="flex gap-1">
-                            <template v-for="(link, index) in paginationLinks" :key="index">
-                                <button v-if="link.url" @click="router.visit(link.url, { preserveScroll: true })"
-                                    :class="[
-                                        'px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
-                                        link.active ? 'bg-cyan-600 text-white shadow-sm' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
-                                    ]" v-html="link.label" :disabled="link.active" />
-                                <span v-else
-                                    class="px-3 py-1.5 rounded-lg text-sm text-gray-400 bg-gray-100 border border-gray-200 cursor-default"
-                                    v-html="link.label" />
-                            </template>
-                        </div>
-                    </div>
+                    <PaginationSimple :data="props.tenants" :links="paginationLinks" :has-data="hasTenants"
+                        label="tenants" />
                 </div>
             </div>
         </div>
 
-        <!-- Modal de Confirmação -->
         <ConfirmDeleteModal :show="deleteModal.show" :item-name="deleteModal.tenant?.id" title="Excluir Tenant"
             message="Tem certeza que deseja excluir este tenant?"
             warning-message="Todos os dados associados serão permanentemente removidos. Esta ação não pode ser desfeita."
