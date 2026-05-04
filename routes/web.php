@@ -2,21 +2,18 @@
 
 use App\Http\Controllers\CentralUserController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\SmsTemplateController;
 use App\Http\Controllers\TenantController;
 use App\Http\Middleware\PreventAccessFromTenantDomains;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware([PreventAccessFromTenantDomains::class])->group(function () {
-    Route::get('/', function () {
-        if (Auth::check()) {
-            return redirect()->route('dashboard');
-        }
-        return redirect()->route('login');
-    });
+
+    // Antes: redirect direto — Agora: LandingPage para visitantes, redirect para autenticados
+    Route::get('/', [LandingController::class, 'index']);
 
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->middleware(['auth', 'verified'])

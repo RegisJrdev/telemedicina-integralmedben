@@ -1,0 +1,18 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
+
+class LandingController extends Controller
+{
+    public function index()
+    {
+        if (Auth::check()) {
+            return redirect()->route('dashboard');
+        }
+
+        return Inertia::render('LandingPage');
+    }
+}

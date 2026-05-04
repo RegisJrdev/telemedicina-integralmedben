@@ -193,22 +193,20 @@ const navigateTo = (routeName, params = {}) => {
 <template>
     <Head :title="hasSearch ? `Busca: ${search} - Leis` : 'Gerenciar Leis'" />
     <CentralAdminLayout>
-        <template #header>
+
             <div class="flex items-center justify-between">
                 <div>
                     <h2 class="text-xl font-semibold leading-tight text-gray-800 uppercase tracking-wide">
                         Gerenciar Leis
                     </h2>
-                    <p class="text-sm text-gray-500 mt-1">
-                        {{ hasLeis ? `${props.leis.total} lei(s) cadastrada(s)` : 'Nenhuma lei cadastrada' }}
-                    </p>
+
                 </div>
                 <div v-if="can.manage" class="flex items-center gap-2 text-xs text-cyan-600 bg-cyan-50 px-3 py-1 rounded-full">
                     <ShieldAlert class="w-4 h-4" />
                     <span>Modo Administrador</span>
                 </div>
             </div>
-        </template>
+
         <div class="py-6">
             <!-- ✅ Flash Messages -->
             <div v-if="flashMessage"
@@ -218,7 +216,7 @@ const navigateTo = (routeName, params = {}) => {
                  ]">
                 {{ flashMessage }}
             </div>
-            <div class="mx-auto sm:px-6 lg:px-4 space-y-4">
+            <div class="mx-auto  space-y-4">
                 <div class="flex flex-col lg:flex-row gap-3 justify-between items-start lg:items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                     <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
                         <div class="relative w-full sm:w-80">
