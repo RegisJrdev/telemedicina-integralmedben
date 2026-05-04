@@ -41,6 +41,18 @@ class RouteModuleServiceProvider extends ServiceProvider
             'name'       => 'admin.',
             'file'       => 'admin.php',
         ],
+        'pagina'       => [
+            'middleware' => ['web'],
+            'prefix'     => 'pagina',
+            'name'       => 'pagina.',
+            'file'       => 'pagina.php',
+        ],
+        'perfil'       => [
+            'middleware' => ['web', 'auth'],
+            'prefix'     => 'perfil',
+            'name'       => 'perfil.',
+            'file'       => 'perfil.php',
+        ],
         // 'api-custom' => [
         //     'middleware' => 'api',
         //     'prefix'     => 'v2',

@@ -12,9 +12,12 @@ use Spatie\Permission\PermissionRegistrar;
 class RolePermissionSeeder extends Seeder
 {
     use WithoutModelEvents;
+
     public function run(): void
     {
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
+
+        // ─── Permissões de Usuários ───
         $userPermissions = [
             'users.view',
             'users.create',
@@ -28,6 +31,8 @@ class RolePermissionSeeder extends Seeder
                 ['guard_name' => 'web']
             );
         }
+
+        // ─── Permissões de Formulários ───
         $formPermissions = [
             'forms.view',
             'forms.create',
@@ -43,11 +48,44 @@ class RolePermissionSeeder extends Seeder
                 ['guard_name' => 'web']
             );
         }
+
+        // ─── Permissões de Páginas ───
+        $paginaPermissions = [
+            'paginas.view',
+            'paginas.create',
+            'paginas.edit',
+            'paginas.delete',
+            'paginas.show',
+            'paginas.manage',
+        ];
+        foreach ($paginaPermissions as $permission) {
+            Permission::firstOrCreate(
+                ['name' => $permission],
+                ['guard_name' => 'web']
+            );
+        }
+
+        // ─── Permissões de Leis ───
+        $leisPermissions = [
+            'leis.view',
+            'leis.create',
+            'leis.edit',
+            'leis.delete',
+        ];
+        foreach ($leisPermissions as $permission) {
+            Permission::firstOrCreate(
+                ['name' => $permission],
+                ['guard_name' => 'web']
+            );
+        }
+
+        // ─── Roles ───
         $adminRole = Role::firstOrCreate(
             ['name' => 'Admin'],
             ['guard_name' => 'web']
         );
         $adminRole->syncPermissions(Permission::all());
+
         $managerRole = Role::firstOrCreate(
             ['name' => 'Manager'],
             ['guard_name' => 'web']
@@ -56,7 +94,11 @@ class RolePermissionSeeder extends Seeder
             'users.view', 'users.create', 'users.edit',
             'forms.view', 'forms.create', 'forms.edit', 'forms.delete',
             'forms.update.status', 'forms.toggle.visibility',
+            'paginas.view', 'paginas.create', 'paginas.edit', 'paginas.delete',
+            'paginas.show',
+            'leis.view', 'leis.create', 'leis.edit', 'leis.delete',
         ]);
+
         $editorRole = Role::firstOrCreate(
             ['name' => 'Editor'],
             ['guard_name' => 'web']
@@ -64,7 +106,10 @@ class RolePermissionSeeder extends Seeder
         $editorRole->syncPermissions([
             'forms.view', 'forms.create', 'forms.edit',
             'forms.update.status', 'forms.toggle.visibility',
+            'paginas.view', 'paginas.show',
+            'leis.view', 'leis.create', 'leis.edit',
         ]);
+
         $userRole = Role::firstOrCreate(
             ['name' => 'User'],
             ['guard_name' => 'web']
@@ -72,7 +117,11 @@ class RolePermissionSeeder extends Seeder
         $userRole->syncPermissions([
             'forms.view', 'forms.create',
             'forms.toggle.visibility',
+            'paginas.view', 'paginas.show',
+            'leis.view',
         ]);
+
+        // ─── Usuários ───
         $admin = User::firstOrCreate(
             ['email' => 'admin@admin.com'],
             [
@@ -82,6 +131,7 @@ class RolePermissionSeeder extends Seeder
             ]
         );
         $admin->syncRoles(['Admin']);
+
         $manager = User::firstOrCreate(
             ['email' => 'manager@localhost'],
             [
@@ -91,6 +141,7 @@ class RolePermissionSeeder extends Seeder
             ]
         );
         $manager->syncRoles(['Manager']);
+
         $editor = User::firstOrCreate(
             ['email' => 'editor@localhost'],
             [
@@ -100,6 +151,7 @@ class RolePermissionSeeder extends Seeder
             ]
         );
         $editor->syncRoles(['Editor']);
+
         $user = User::firstOrCreate(
             ['email' => 'user@localhost'],
             [
@@ -109,6 +161,11 @@ class RolePermissionSeeder extends Seeder
             ]
         );
         $user->syncRoles(['User']);
-        echo "Roles, permissões e usuários criados com sucesso!\n";
+
+        echo "✅ Roles, permissões e usuários criados com sucesso!\n";
+        echo "   - Admin: admin@admin.com / password\n";
+        echo "   - Manager: manager@localhost / password\n";
+        echo "   - Editor: editor@localhost / password\n";
+        echo "   - User: user@localhost / password\n";
     }
 }

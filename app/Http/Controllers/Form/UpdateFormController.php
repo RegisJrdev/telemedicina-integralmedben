@@ -156,7 +156,7 @@ class UpdateFormController extends Controller
             if (is_dir($caminhoCompleto)) {
                 chmod($caminhoCompleto, 0755);
             }
-            Log::info("Diretório criado: {$caminho} no disco {$disk}");
+            // Log::info("Diretório criado: {$caminho} no disco {$disk}");
         }
     }
     private function syncFields(Form $form, array $fields): void

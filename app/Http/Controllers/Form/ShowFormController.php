@@ -9,6 +9,7 @@ use Inertia\Response;
 
 class ShowFormController extends Controller
 {
+
     private function getLogoData(Form $form): ?array
     {
         $logoArquivo = $form->arquivos->first();

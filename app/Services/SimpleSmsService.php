@@ -16,9 +16,6 @@ class SimpleSmsService
         );
     }
 
-    /**
-     * Envia SMS simples
-     */
     public function send(string $phone, string $message, ?string $ref = null): array
     {
         $destinationAddr = $this->formatPhone($phone);

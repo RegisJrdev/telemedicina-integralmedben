@@ -8,6 +8,7 @@ use App\Models\FormArquivo;
 use App\Models\FormResponse;
 use App\Services\ClubleBeneficiarioService;
 use App\Services\SimpleSmsService;
+use App\Services\Tenant\FormsResponseTenentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,14 +23,14 @@ class PublicFormController extends Controller
 {
     public function __construct(
         protected ClubleBeneficiarioService $beneficiarioService,
-        private SimpleSmsService $simpleSmsService
-    ) {}
+        private SimpleSmsService $simpleSmsService,
+        private FormsResponseTenentService $formsResponseTenentService
 
+    ) {}
     private function canAcceptResponses(Form $form): bool
     {
         return $form->status === 'ativo';
     }
-
     private function getLogoData(Form $form): ?array
     {
         $logoArquivo = $form->arquivos->first();
@@ -41,7 +42,6 @@ class PublicFormController extends Controller
             'posicao' => $logoArquivo->pivot->posicao ?? 'centro',
         ];
     }
-
     private function convertBrazilianDateToISO(string $date): string
     {
         $parts = explode('/', $date);
@@ -50,8 +50,6 @@ class PublicFormController extends Controller
         }
         return $date;
     }
-
-    // ⭐ Verifica se é campo de data
     private function isDateField($field): bool
     {
         $label = strtolower($field->label);
@@ -60,8 +58,6 @@ class PublicFormController extends Controller
         str_contains($label, 'data') ||
         str_contains($label, 'birth');
     }
-
-    // ⭐ Verifica se é campo de CPF
     private function isCPFField($field): bool
     {
         $label = strtolower($field->label);
@@ -69,7 +65,6 @@ class PublicFormController extends Controller
         str_contains($label, 'cpf') ||
         str_contains($label, 'c.p.f');
     }
-
     public function show(string $slug): Response
     {
         try {
@@ -216,7 +211,6 @@ class PublicFormController extends Controller
             abort(500, 'Erro ao carregar o formulário. Tente novamente mais tarde.');
         }
     }
-
     public function store(Request $request, string $slug): RedirectResponse
     {
         DB::beginTransaction();
@@ -249,10 +243,8 @@ class PublicFormController extends Controller
                 DB::rollBack();
                 abort(403, 'Limite de respostas atingido.');
             }
-
             $rules    = [];
             $messages = [];
-
             foreach ($form->fields as $field) {
                 $fieldRules = [];
                 if ($field->required) {
@@ -261,7 +253,6 @@ class PublicFormController extends Controller
                 } else {
                     $fieldRules[] = 'nullable';
                 }
-
                 switch ($field->type) {
                     case 'email':
                         $fieldRules[] = 'email:rfc,dns';
@@ -270,38 +261,28 @@ class PublicFormController extends Controller
                         $fieldRules[] = 'numeric';
                         break;
                     case 'date':
-                        // ⭐ VALIDAÇÃO: Espera formato brasileiro DD/MM/YYYY
                         $fieldRules[]                                 = 'date_format:d/m/Y';
                         $messages["answers.{$field->id}.date_format"] = "O campo \"{$field->label}\" deve estar no formato DD/MM/AAAA.";
                         break;
                     case 'cpf':
-                        // ⭐ VALIDAÇÃO NUMERIC PARA CPF (11 dígitos)
                         $fieldRules[]                             = 'numeric';
                         $fieldRules[]                             = 'digits:11';
                         $messages["answers.{$field->id}.numeric"] = "O campo \"{$field->label}\" deve conter apenas números.";
                         $messages["answers.{$field->id}.digits"]  = "O campo \"{$field->label}\" deve ter exatamente 11 dígitos.";
                         break;
                 }
-
                 $rules["answers.{$field->id}"] = $fieldRules;
             }
-
-            $validated = $request->validate($rules, $messages);
-
-            // ⭐ PROCESSA RESPOSTAS: Converte datas brasileiras para ISO antes de salvar
+            $validated        = $request->validate($rules, $messages);
             $processedAnswers = [];
             foreach ($form->fields as $field) {
                 $answer = $validated['answers'][$field->id] ?? null;
-
                 if ($answer && $this->isDateField($field)) {
-                    // Converte DD/MM/YYYY -> YYYY-MM-DD para salvar no banco
                     $processedAnswers[$field->id] = $this->convertBrazilianDateToISO($answer);
                 } else {
-                    // CPF e outros campos: mantém como está
                     $processedAnswers[$field->id] = $answer;
                 }
             }
-
             $formResponse = FormResponse::create([
                 'form_id'    => $form->id,
                 'user_id'    => auth()->id(),
@@ -309,14 +290,17 @@ class PublicFormController extends Controller
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent(),
             ]);
-
             $form->increment('responses_count');
             if ($form->credencia_cluble_id) {
                 $this->sincronizarComClube($form, $formResponse, $validated['answers']);
             }
+            $host          = request()->getHost();
+            $currentTenant = str($host)->before('.')->toString();
+            if ($currentTenant != null) {
+                $this->formsResponseTenentService->create($currentTenant, $form->id, $formResponse->id);
+            }
 
             DB::commit();
-
             return redirect()
                 ->route('forms.public.thanks', $slug)
                 ->with('success', 'Resposta enviada com sucesso!');
@@ -335,7 +319,6 @@ class PublicFormController extends Controller
                 ->with('error', 'Erro ao enviar resposta. Tente novamente.');
         }
     }
-
     public function thanks(string $slug): Response
     {
         $form = Form::where('slug', $slug)
@@ -355,7 +338,6 @@ class PublicFormController extends Controller
     private function sincronizarComClube(Form $form, FormResponse $formResponse, array $answers): void
     {
         $credencial = CredenciasCluble::find($form->credencia_cluble_id);
-
         if (! $credencial || $credencial->isTokenExpired()) {
             Log::warning('Credencial inválida ou expirada', [
                 'form_id'       => $form->id,
@@ -363,33 +345,23 @@ class PublicFormController extends Controller
             ]);
             return;
         }
-
-        // Busca campos do formulário em ordem
         $fields = $form->fields()->orderBy('order')->get();
-
-        // Mapeia respostas
-        $dados = $this->mapearRespostasPorOrdem($fields, $answers);
-
+        $dados  = $this->mapearRespostasPorOrdem($fields, $answers);
         if (! empty($dados['cellphone'])) {
-            $empresa = $form->title ?? 'Empresa';
-            $cliente = $dados['name'] ?? 'Cliente';
-            $data    = now()->format('d/m/Y');
-            $hora    = now()->format('H:i');
-
-            $conteudo = "$empresa, Olá $cliente! Seu cadastro foi confirmado no dia $data às $hora.";
-
+            $empresa   = $form->title ?? 'Empresa';
+            $cliente   = $dados['name'] ?? 'Cliente';
+            $data      = now()->format('d/m/Y');
+            $hora      = now()->format('H:i');
+            $conteudo  = "$empresa, Olá $cliente! Seu cadastro foi confirmado no dia $data às $hora.";
             $resultado = $this->simpleSmsService->send(
                 $dados['cellphone'],
                 $conteudo,
-
             );
         }
-
         Log::info('Dados mapeados para API Clube', [
             'form_id' => $form->id,
             'dados'   => $dados,
         ]);
-
         if (empty($dados['name']) || empty($dados['email']) || empty($dados['cpf'])) {
             Log::warning('Dados obrigatórios faltando', [
                 'form_id'   => $form->id,
@@ -400,9 +372,7 @@ class PublicFormController extends Controller
             ]);
             return;
         }
-
         $resultado = $this->beneficiarioService->cadastrarBeneficiario($dados, $credencial);
-
         if ($resultado && $resultado['success']) {
             $formResponse->update([
                 'external_beneficiario_id' => $resultado['data']['id'] ?? null,
@@ -414,7 +384,6 @@ class PublicFormController extends Controller
                 'erro_sincronizacao'       => $resultado['error']['message'] ?? 'Erro desconhecido',
                 'tentativas_sincronizacao' => ($formResponse->tentativas_sincronizacao ?? 0) + 1,
             ]);
-
             Log::error('Falha sincronização Clube', [
                 'form_id'     => $form->id,
                 'response_id' => $formResponse->id,
@@ -422,165 +391,96 @@ class PublicFormController extends Controller
             ]);
         }
     }
-
-    /**
-     * Mapeia respostas pela ordem dos campos
-     */
     private function mapearRespostasPorOrdem($fields, array $answers): array
     {
         $respostas = array_values($answers);
-
-        $dados = [
-            'name'            => null,  // required
-            'email'           => null,  // required
-            'cpf'             => null,  // required
-            'birth_date'      => null,  // nullable
-            'cellphone'       => null,  // nullable
-            'company_name'    => null,  // nullable
-            'expiration_date' => null,  // nullable
-            'password'        => null,  // opcional (gera se não informar)
-            'newsletter'      => false, // boolean
-            'sms'             => false, // boolean
-            'whatsapp'        => false, // boolean
-            'authorized'      => true,  // boolean (true = cadastra automaticamente)
+        $dados     = [
+            'name'            => null,
+            'email'           => null,
+            'cpf'             => null,
+            'birth_date'      => null,
+            'cellphone'       => null,
+            'company_name'    => null,
+            'expiration_date' => null,
+            'password'        => null,
+            'newsletter'      => false,
+            'sms'             => false,
+            'whatsapp'        => false,
+            'authorized'      => true,
         ];
-
         foreach ($fields as $index => $field) {
             $valor = $respostas[$index] ?? null;
-
             if (empty($valor)) {
                 continue;
             }
-
             $campoClube = $this->identificarCampoClube($field);
-
             if (! $campoClube) {
                 continue;
             }
-
             $dados[$campoClube] = $this->formatarValor($valor, $campoClube, $field->type);
         }
-
-        // Remove campos nulos (exceto booleanos já definidos)
         return array_filter($dados, function ($v, $k) {
-            // Mantém booleanos mesmo se false
             if (in_array($k, ['newsletter', 'sms', 'whatsapp', 'authorized'])) {
                 return true;
             }
             return $v !== null && $v !== '';
         }, ARRAY_FILTER_USE_BOTH);
     }
-
-    /**
-     * Identifica qual campo da API pelo label
-     */
     private function identificarCampoClube($field): ?string
     {
         $label = mb_strtolower(trim($field->label));
         $type  = $field->type;
-
-        // Mapeamento exato baseado nos labels comuns
         return match (true) {
-            // Nome
             str_contains($label, 'nome') && str_contains($label, 'completo')                     => 'name',
-
-            // Email
             str_contains($label, 'e-mail') || str_contains($label, 'email') || $type === 'email' => 'email',
-
-            // CPF
             str_contains($label, 'cpf')                                                          => 'cpf',
-
-            // Data de nascimento
             str_contains($label, 'nascimento') ||
             (str_contains($label, 'data') && str_contains($label, 'nasc')) ||
             ($type === 'date' && str_contains($label, 'nasc'))                                   => 'birth_date',
-
-            // Celular
             str_contains($label, 'celular') ||
             str_contains($label, 'telefone') ||
             str_contains($label, 'fone') ||
             str_contains($label, 'tel') ||
             str_contains($label, 'whatsapp')                                                     => 'cellphone',
-
-            // Empresa
             str_contains($label, 'empresa') ||
             str_contains($label, 'company') ||
             str_contains($label, 'organização')                                                  => 'company_name',
-
-            // Data de expiração
             str_contains($label, 'expiração') ||
             str_contains($label, 'validade') ||
             str_contains($label, 'vencimento')                                                   => 'expiration_date',
-
-            // Senha
             str_contains($label, 'senha') ||
             str_contains($label, 'password')                                                     => 'password',
-
             default                                                                              => null,
         };
     }
-
-    /**
-     * Formata valor conforme regras da API
-     */
     private function formatarValor(mixed $valor, string $campoClube, string $fieldType): mixed
     {
         $valor = is_string($valor) ? trim($valor) : $valor;
-
         return match ($campoClube) {
-            // name: string, max 100
             'name'            => mb_substr($valor, 0, 100),
-
-            // email: string, min 10, max 80
             'email'           => mb_strtolower(mb_substr($valor, 0, 80)),
-
-            // cpf: string, max 11 (somente números)
             'cpf'             => mb_substr(preg_replace('/[^0-9]/', '', $valor), 0, 11),
-
-            // birth_date: string, formato 01/01/2000
             'birth_date'      => $this->formatarData($valor),
-
-            // cellphone: string, max 15, formato (99) 99999-9999
             'cellphone'       => $this->formatarTelefone($valor),
-
-            // company_name: string, nullable
             'company_name'    => mb_substr($valor, 0, 255) ?: null,
-
-            // expiration_date: string, nullable
             'expiration_date' => $this->formatarData($valor),
-
-            // password: string
             'password'        => $valor,
-
-            // booleanos
             'newsletter', 'sms', 'whatsapp', 'authorized' => (bool) $valor,
-
             default           => $valor,
         };
     }
-
-    /**
-     * Formata data para 01/01/2000
-     */
     private function formatarData(?string $data): ?string
     {
         if (! $data) {
             return null;
         }
-
         $data = trim($data);
-
-        // Já está no formato brasileiro?
         if (preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $data)) {
             return $data;
         }
-
-        // Formato ISO (YYYY-MM-DD)
         if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $data)) {
             return \Carbon\Carbon::createFromFormat('Y-m-d', $data)->format('d/m/Y');
         }
-
-        // Timestamp ou outro formato
         try {
             return \Carbon\Carbon::parse($data)->format('d/m/Y');
         } catch (\Exception $e) {
@@ -588,30 +488,18 @@ class PublicFormController extends Controller
             return $data;
         }
     }
-
-    /**
-     * Formata telefone para (99) 99999-9999
-     */
     private function formatarTelefone(?string $tel): ?string
     {
         if (! $tel) {
             return null;
         }
-
-        // Remove tudo exceto números
         $n = preg_replace('/[^0-9]/', '', $tel);
-
-        // Celular com 9 dígitos: (99) 99999-9999
         if (strlen($n) === 11) {
             return '(' . substr($n, 0, 2) . ') ' . substr($n, 2, 5) . '-' . substr($n, 7);
         }
-
-        // Fixo com 8 dígitos: (99) 9999-9999
         if (strlen($n) === 10) {
             return '(' . substr($n, 0, 2) . ') ' . substr($n, 2, 4) . '-' . substr($n, 6);
         }
-
-        // Se não tiver formato esperado, retorna como veio (limitado a 15 chars)
         return mb_substr($tel, 0, 15);
     }
 }
