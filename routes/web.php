@@ -25,9 +25,9 @@ Route::middleware([PreventAccessFromTenantDomains::class])->group(function () {
     Route::middleware('auth')->group(function () {
         Route::get('/credenciados', [TenantController::class, 'index'])->name('credenciados.index');
 
-        Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-        Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-        Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+        // Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+        // Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+        // Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
         Route::get('/registros', [QuestionController::class, 'index'])->name('registros.index');
         Route::post('/questions', [QuestionController::class, 'store'])->name('questions.store');
