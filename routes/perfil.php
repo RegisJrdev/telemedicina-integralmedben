@@ -10,7 +10,7 @@ Route::patch('/', [AuthProfileController::class, 'update'])
     ->name('update');
 
 Route::put('/senha', [AuthProfileController::class, 'updatePassword'])
-    ->name('update');
+    ->name('password.update');
 
 Route::delete('/{id}', [AuthProfileController::class, 'destroy'])
     ->name('destroy');
