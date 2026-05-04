@@ -1,6 +1,5 @@
 <?php
-
-declare (strict_types = 1);
+declare(strict_types=1);
 
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PublicFormController;
@@ -9,31 +8,26 @@ use App\Http\Controllers\Tenant\Form\FormIndexController;
 use App\Http\Controllers\Tenant\Form\FormShowController;
 use App\Http\Controllers\Tenant\TenantAuthController;
 use App\Http\Controllers\Tenant\UserController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
-
-/*
-|--------------------------------------------------------------------------
-| Tenant Routes
-|--------------------------------------------------------------------------
-|
-| Here you can register the tenant routes for your application.
-| These routes are loaded by the TenantRouteServiceProvider.
-|
-*/
 
 Route::middleware([
     'web',
     InitializeTenancyByDomain::class,
     PreventAccessFromCentralDomains::class,
 ])->group(function () {
-    // Route::get('/', [PublicFormController::class, 'show'])->name('public_form.show');
-    Route::get('/', [TenantAuthController::class, 'showLoginForm'])
-        ->name('public_form.show');
+
+    // Redireciona raiz do tenant para o login
+    Route::get('/', function () {
+        if (Auth::check()) {
+            return redirect()->route('patients.index');
+        }
+        return redirect()->route('tenant.login');
+    });
 
     Route::get('/public-form', [PublicFormController::class, 'showLoginForm'])->name('public_form.store');
-
     Route::get('/admin/login', [TenantAuthController::class, 'showLoginForm'])->name('tenant.login');
     Route::post('/admin/login', [TenantAuthController::class, 'login']);
 
@@ -63,13 +57,9 @@ Route::middleware([
             ->controller(ConfiguracaoController::class)
             ->group(function () {
                 Route::get('/', 'index')->name('index');
-                Route::post('/logo', [ConfiguracaoController::class, 'updateLogo'])
-                    ->name('logo.update');
-
+                Route::post('/logo', [ConfiguracaoController::class, 'updateLogo'])->name('logo.update');
             });
-
     });
-
 });
 
 Route::middleware('tenant')->get('/teste', function () {
