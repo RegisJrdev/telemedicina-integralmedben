@@ -9,6 +9,8 @@ import Breadcrumb from "@/Components/Breadcrumb.vue";
 import FormField from "@/Components/FormFields/FormField.vue";
 import ColorPicker from "@/Components/ColorPicker.vue";
 import ImageUpload from '@/Components/ImageUpload.vue';
+import DateTimeInput from '@/Components/DateTimeInput.vue';
+
 
 import {
     Plus,
@@ -244,7 +246,6 @@ const showPreview = ref(false);
     <Head :title="isEdit ? 'Editar Formulário' : 'Criar Formulário'" />
 
     <CentralAdminLayout>
-        <!-- Header -->
         <div class="flex flex-wrap items-center justify-between gap-2 mb-6">
             <div class="space-y-1">
                 <Breadcrumb :items="breadcrumbs" />
@@ -403,22 +404,12 @@ const showPreview = ref(false);
 
                         <!-- Datas -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <Label for="published_at" class="text-gray-700 flex items-center gap-2">
-                                    <Calendar class="w-4 h-4" />
-                                    Data de Publicação
-                                </Label>
-                                <input id="published_at" type="datetime-local" v-model="formData.published_at"
-                                    :class="inputClass" />
-                            </div>
+                             <DateTimeInput id="published_at" label="Data de Publicação"
+                                    v-model="formData.published_at" />
 
                             <div>
-                                <Label for="expires_at" class="text-gray-700 flex items-center gap-2">
-                                    <Calendar class="w-4 h-4" />
-                                    Data de Expiração
-                                </Label>
-                                <input id="expires_at" type="datetime-local" v-model="formData.expires_at"
-                                    :class="inputClass" />
+                                <DateTimeInput id="expires_at" label="Data de Expiração"
+                                    v-model="formData.expires_at" />
                             </div>
                         </div>
 

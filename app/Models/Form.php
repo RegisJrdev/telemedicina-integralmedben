@@ -162,4 +162,15 @@ class Form extends Model
     {
         return $this->belongsTo(CredenciasCluble::class, 'credencia_cluble_id');
     }
+
+    public function tenants()
+    {
+        return $this->belongsToMany(
+            Tenant::class,
+            'tenants_forms',
+            'form_id',
+            'tenant_id'
+        )
+        ->withTimestamps();
+    }
 }

@@ -24,39 +24,30 @@ const props = defineProps({
         default: () => ({ search: '' })
     }
 });
-
 const page = usePage();
 const auth = computed(() => page.props.authUser);
 const can = computed(() => page.props.authUser?.can?.paginas || {});
 const canManage = computed(() => page.props.authUser?.can?.manage || false);
 const flashMessage = computed(() => page.props.flash?.message);
 const flashType = computed(() => page.props.flash?.type);
-
 const search = ref(props.filters.search || '');
 const searchInput = ref(null);
 let searchTimer = null;
-
 const deleteModal = ref({
     show: false,
     tenant: null,
     isProcessing: false
 });
-
-// ✅ ALTERADO: props.tenant → props.tenants
 const tenantList = computed(() => props.tenants?.data || []);
-
 const paginationLinks = computed(() => {
-    // ✅ ALTERADO: props.tenant → props.tenants
     return (props.tenants?.links || []).map(link => ({
         ...link,
         label: link.label.replace('&laquo;', '‹').replace('&raquo;', '›')
     }));
 });
-
 const hasTenants = computed(() => tenantList.value.length > 0);
 const hasSearch = computed(() => search.value.length > 0);
 const hasActiveFilters = computed(() => hasSearch.value);
-
 const performSearch = () => {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => {
@@ -74,17 +65,14 @@ const performSearch = () => {
         );
     }, 300);
 };
-
 watch(search, (newVal, oldVal) => {
     if (newVal !== oldVal) performSearch();
 });
-
 const clearSearch = () => {
     search.value = '';
     searchInput.value?.focus();
     performSearch();
 };
-
 const openDeleteModal = (item) => {
     if (!can.value.delete) {
         router.visit(route('unauthorized'));
@@ -96,7 +84,6 @@ const openDeleteModal = (item) => {
         isProcessing: false
     };
 };
-
 const closeDeleteModal = () => {
     deleteModal.value.show = false;
     setTimeout(() => {
@@ -104,7 +91,6 @@ const closeDeleteModal = () => {
         deleteModal.value.isProcessing = false;
     }, 200);
 };
-
 const confirmDelete = () => {
     if (!deleteModal.value.tenant) return;
     deleteModal.value.isProcessing = true;
@@ -122,7 +108,6 @@ const confirmDelete = () => {
         }
     });
 };
-
 const formatDate = (date) => {
     if (!date) return '-';
     return new Intl.DateTimeFormat('pt-BR', {
@@ -131,7 +116,6 @@ const formatDate = (date) => {
         year: 'numeric'
     }).format(new Date(date));
 };
-
 const formatDateTime = (date) => {
     if (!date) return '-';
     return new Intl.DateTimeFormat('pt-BR', {
@@ -142,16 +126,13 @@ const formatDateTime = (date) => {
         minute: '2-digit'
     }).format(new Date(date));
 };
-
 const getTenantDomain = (domains) => {
     if (!domains || !domains.length) return 'Nenhum domínio';
     return domains[0]?.domain || domains[0] || 'Nenhum domínio';
 };
-
 const getTenantStatus = (item) => {
     return item.status || 'ativo';
 };
-
 const getStatusClass = (status) => {
     const classes = {
         'ativo': 'bg-green-100 text-green-800 border-green-200',
@@ -161,7 +142,6 @@ const getStatusClass = (status) => {
     };
     return classes[status] || 'bg-gray-100 text-gray-800 border-gray-200';
 };
-
 const getStatusLabel = (status) => {
     const labels = {
         'ativo': 'Ativo',
@@ -171,20 +151,16 @@ const getStatusLabel = (status) => {
     };
     return labels[status] || status;
 };
-
 const getInitials = (name) => {
     if (!name) return 'T';
     return name.charAt(0).toUpperCase();
 };
-
 const navigateTo = (routeName, params = {}) => {
     router.visit(route(routeName, params));
 };
 </script>
-
 <template>
     <CentralAdminLayout>
-
         <div class="flex items-center justify-between w-full  ">
             <div>
                 <h2 class="text-xl font-semibold leading-tight text-gray-800 uppercase tracking-wide">
@@ -200,7 +176,6 @@ const navigateTo = (routeName, params = {}) => {
                 <span>Modo Administrador</span>
             </div>
         </div>
-
         <div class="py-6">
             <div v-if="flashMessage" :class="[
                 'mb-4 p-4 rounded-lg text-sm font-medium',
@@ -208,7 +183,6 @@ const navigateTo = (routeName, params = {}) => {
             ]">
                 {{ flashMessage }}
             </div>
-
             <div class="mx-auto  space-y-4">
                 <div
                     class="flex flex-col lg:flex-row gap-3 justify-between items-start lg:items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
@@ -233,7 +207,6 @@ const navigateTo = (routeName, params = {}) => {
                             Limpar filtros
                         </button>
                     </div>
-
                     <Button v-if="can.create"
                         class="flex items-center gap-2 rounded-xl bg-cyan-500 hover:bg-cyan-600 px-5 py-2.5 text-white font-semibold shadow-md transition-all hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
                         @click="navigateTo('pagina.create')">
@@ -247,7 +220,6 @@ const navigateTo = (routeName, params = {}) => {
                         Sem permissão
                     </div>
                 </div>
-
                 <div v-if="hasActiveFilters && hasTenants"
                     class="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
                     <Search class="w-4 h-4 text-cyan-600" />
@@ -258,7 +230,6 @@ const navigateTo = (routeName, params = {}) => {
                         </template>
                     </span>
                 </div>
-
                 <div class="border rounded-xl border-gray-200 bg-white shadow-sm overflow-hidden">
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
@@ -280,7 +251,6 @@ const navigateTo = (routeName, params = {}) => {
                                         class="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-500 tracking-wider">
                                         Domínio
                                     </th>
-
                                     <th
                                         class="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-500 tracking-wider">
                                         Criado em
@@ -324,7 +294,6 @@ const navigateTo = (routeName, params = {}) => {
                                             <PomponeteLink :url="item.url" :label="item.url" />
                                         </div>
                                     </td>
-
                                     <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                                         <time :title="formatDateTime(item.created_at)">
                                             {{ formatDate(item.created_at) }}
@@ -367,7 +336,6 @@ const navigateTo = (routeName, params = {}) => {
                             </tbody>
                         </table>
                     </div>
-
                     <div v-if="!hasTenants" class="text-center py-16 text-gray-500">
                         <div v-if="hasActiveFilters" class="space-y-3">
                             <div class="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
@@ -390,13 +358,11 @@ const navigateTo = (routeName, params = {}) => {
                             <p class="text-sm text-gray-500">Comece adicionando o primeiro tenant ao sistema</p>
                         </div>
                     </div>
-
                     <PaginationSimple :data="props.tenants" :links="paginationLinks" :has-data="hasTenants"
                         label="tenants" />
                 </div>
             </div>
         </div>
-
         <ConfirmDeleteModal :show="deleteModal.show" :item-name="deleteModal.tenant?.id" title="Excluir Tenant"
             message="Tem certeza que deseja excluir este tenant?"
             warning-message="Todos os dados associados serão permanentemente removidos. Esta ação não pode ser desfeita."
