@@ -9,7 +9,7 @@ import Breadcrumb from "@/Components/Breadcrumb.vue";
 import FormField from "@/Components/FormFields/FormField.vue";
 import ColorPicker from "@/Components/ColorPicker.vue";
 import ImageUpload from '@/Components/ImageUpload.vue';
-
+import DateTimeInput from '@/Components/DateTimeInput.vue';
 import {
     Plus,
     Trash2,
@@ -72,7 +72,13 @@ const props = defineProps({
 const isEdit = computed(() => !!props.form);
 
 const inputClass = "w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500";
+const formatDateTimeLocal = (date) => {
+    if (!date) return '';
 
+    return new Date(date)
+        .toISOString()
+        .slice(0, 16);
+};
 const formData = ref({
     title: props.form?.title || '',
     description: props.form?.description || '',
@@ -80,8 +86,8 @@ const formData = ref({
     lei_id: props.form?.lei_id || null,
     status: props.form?.status || 'rascunho',
     is_public: props.form?.is_public || false,
-    published_at: props.form?.published_at || '',
-    expires_at: props.form?.expires_at || '',
+    published_at: props.form?.published_at ?? null,
+    expires_at: props.form?.expires_at ?? null,
     response_limit: props.form?.response_limit || '',
     primary_color: props.form?.primary_color || '#22d3ee',
     secondary_color: props.form?.secondary_color || '#06b6d4',
@@ -245,7 +251,7 @@ const showPreview = ref(false);
     <Head :title="isEdit ? 'Editar Formulário' : 'Criar Formulário'" />
 
     <CentralAdminLayout>
-        <!-- Header -->
+
         <div class="flex flex-wrap items-center justify-between gap-2 mb-6">
             <div class="space-y-1">
                 <Breadcrumb :items="breadcrumbs" />
@@ -411,22 +417,12 @@ const showPreview = ref(false);
 
                         <!-- Datas -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <Label for="published_at" class="text-gray-700 flex items-center gap-2">
-                                    <Calendar class="w-4 h-4" />
-                                    Data de Publicação
-                                </Label>
-                                <input id="published_at" type="datetime-local" v-model="formData.published_at"
-                                    :class="inputClass" />
-                            </div>
+                             <DateTimeInput id="published_at" label="Data de Publicação"
+                                    v-model="formData.published_at" />
 
                             <div>
-                                <Label for="expires_at" class="text-gray-700 flex items-center gap-2">
-                                    <Calendar class="w-4 h-4" />
-                                    Data de Expiração
-                                </Label>
-                                <input id="expires_at" type="datetime-local" v-model="formData.expires_at"
-                                    :class="inputClass" />
+                                <DateTimeInput id="expires_at" label="Data de Expiração"
+                                    v-model="formData.expires_at" />
                             </div>
                         </div>
 

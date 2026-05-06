@@ -19,6 +19,7 @@ class UpdateFormController extends Controller
         try {
             DB::beginTransaction();
             $validated = $request->validated();
+
             $form->update([
                 'title'                   => $validated['title'],
                 'description'             => $validated['description'] ?? null,

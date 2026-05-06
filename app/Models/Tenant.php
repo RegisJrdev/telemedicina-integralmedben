@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -35,8 +36,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
 
     public function details()
     {
-        return $this->hasMany
-            (TenantsDetail::class, 'tenant_id');
+        return $this->hasMany(TenantsDetail::class, 'tenant_id');
     }
 
     public function centralPatients()
@@ -95,4 +95,14 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         return 'https://' . $domain;
     }
 
+    public function forms()
+    {
+        return $this->belongsToMany(
+            Form::class,
+            'tenants_forms',
+            'tenant_id',
+            'form_id'
+        )
+            ->withTimestamps();
+    }
 }

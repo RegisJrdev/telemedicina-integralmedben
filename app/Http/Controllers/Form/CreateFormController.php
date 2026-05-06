@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Form;
 
 use App\Http\Controllers\Controller;
@@ -25,6 +26,7 @@ class CreateFormController extends Controller
             'form'               => $form ? $this->loadForm($form) : null,
             'isEdit'             => $form !== null,
             'statusOptions'      => $this->getStatusOptions(),
+            'categorias' => $this->getCategorias($request),
             'credencias_clubles' => $this->getCredenciasClubles($request),
             'leis'               => $this->getLeis($request),
             'can'                => [
